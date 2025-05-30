@@ -1,0 +1,58 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IFC Reuse Viewer</title>
+    <link rel="stylesheet" href="{% static 'frontend/style.css' %}">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav>
+        <ul>
+            <li><a href="{% url 'index' %}">Home</a></li>
+            <li><a href="{% url 'catalog' %}">Katalog</a></li>
+            <li><a href="{% url 'upload_page' %}">Upload</a></li>
+            <li><a href="{% url 'api' %}">API</a></li>
+            <li><a href="{% url 'about' %}">Über Uns</a></li>
+        </ul>
+        <div class="user-menu">
+            {% if user.is_authenticated %}
+                <div class="dropdown">
+                    <span>👤 {{ user.username }}</span>
+                    <div class="dropdown-content">
+                        <a href="{% url 'settings' %}">Einstellungen</a>
+                        <a href="{% url 'profile' %}">Profil</a>
+                        <a href="{% url 'logout' %}">Abmelden</a>
+                    </div>
+                </div>
+            {% else %}
+                <a href="{% url 'login' %}">Login</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Container for the IFC Viewer -->
+    <div id="container" style="width: 100%; height: 80vh;"></div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Kontakt</h3>
+                <p>E-Mail: <a href="mailto:kontakt@ifc-reuse.com">kontakt@ifc-reuse.com</a></p>
+                <p>Adresse: An d. Hochschule 1, 86161 Augsburg</p>
+                <p>Telefon: <a href="tel:+4982155860">0821 55860</a></p>
+                <p>Öffnungszeiten: Mo–Fr 9:00–17:00</p>
+            </div>
+        </div>
+        <p class="footer-bottom">© 2025 IFC Reuse Platform. Alle Rechte vorbehalten.</p>
+    </footer>
+
+    <!-- Load main.js -->
+    <script type="module" src="http://localhost:5173/main.js"></script>
+
+</body>
+</html>

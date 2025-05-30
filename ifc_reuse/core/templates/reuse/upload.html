@@ -1,0 +1,111 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IFC-Modell hochladen - IFC Reuse Platform</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="{% url 'index' %}">Home</a></li>
+                <li><a href="{% url 'catalog' %}">Katalog</a></li>
+                <li><a href="{% url 'upload_page' %}">Upload</a></li>
+                <li><a href="{% url 'api' %}">API</a></li>
+                <li><a href="{% url 'about' %}">Über Uns</a></li>
+            </ul>
+            <div class="user-menu">
+                {% if user.is_authenticated %}
+                    <div class="dropdown">
+                        <span>👤 {{ user.username }}</span>
+                        <div class="dropdown-content">
+                            <a href="#">Einstellungen</a>
+                            <a href="#">Profil</a>
+                            <a href="#">Abmelden</a>
+                        </div>
+                    </div>
+                {% else %}
+                    <a href="{% url 'login' %}">Login</a>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section>
+            <h1>IFC-Modell hochladen</h1>
+            <p>Lade deine IFC-Datei hoch, um wiederverwendbare Bauteile zu extrahieren.</p>
+            <form id="upload-form" enctype="multipart/form-data">
+                <div>
+                    <label for="project-name">Projektname:</label>
+                    <input type="text" id="project-name" name="project_name" required>
+                </div>
+                <div>
+                    <label for="location">Standort:</label>
+                    <input type="text" id="location" name="location">
+                </div>
+                <div>
+                    <label for="ifc-file">IFC-Datei hochladen:</label>
+                    <input type="file" id="ifc-file" name="file" accept=".ifc" required>
+                </div>
+                <div>
+                    <label>
+                        <input type="checkbox" id="skip-glb" name="skip_glb">
+                        GLB-Konvertierung überspringen (schneller Upload)
+                    </label>
+                </div>
+                <button type="submit">📤 Hochladen</button>
+            </form>
+            <div id="upload-status"></div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="contact">
+            <h3>Kontakt</h3>
+            <p>E-Mail: <a href="mailto:kontakt@ifc-reuse.com">kontakt@ifc-reuse.com</a></p>
+            <p>Adresse: An d. Hochschule 1, 86161 Augsburg</p>
+            <p>Telefon: <a href="tel:+4982155860">0821 55860</a></p>
+            <p>Öffnungszeiten: Mo–Fr 9:00–17:00</p>
+        </div>
+        <p>© 2025 IFC Reuse Platform. Alle Rechte vorbehalten.</p>
+    </footer>
+
+    <script>
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const statusDiv = document.getElementById('upload-status');
+
+            try {
+                statusDiv.textContent = 'Uploading...';
+                const response = await fetch('{% url "upload-ifc" %}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+                const result = await response.json();
+
+                if (response.ok && result.status === 'uploaded') {
+                    statusDiv.textContent = 'Upload successful! Redirecting to viewer...';
+                    // Redirect to the viewer with the uploaded file's ID
+                    const fileUrl = result.file_url;
+                    const fileId = result.file_url.split('/').pop(); // Extract file ID or name
+                    window.location.href = `/viewer/${fileId}/`;
+                } else {
+                    statusDiv.textContent = `Error: ${result.error || 'Upload failed'}`;
+                }
+            } catch (err) {
+                statusDiv.textContent = `Error: ${err.message}`;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IFC-Visualisierung</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.124.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web-ifc@0.0.43/web-ifc-api.umd.js"></script>
+    <style>
+        #viewer {
+            width: 100%;
+            height: 600px;
+            background-color: #2d3748;
+            display: block;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-gray-900 text-[#F1FAEE]">
+    <header class="bg-gray-800 shadow-md py-4 px-6 flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+            <img src="{% static 'images/logo.jpg' %}" alt="Logo" class="h-20 mx-2">
+            <nav class="flex space-x-4 ml-4 text-lg">
+                <a href="{% url 'index' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Home</a>
+                <a href="{% url 'catalog' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Katalog</a>
+                <a href="{% url 'upload_page' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Upload</a>
+                <a href="{% url 'api' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">API</a>
+                <a href="{% url 'about' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Über Uns</a>
+            </nav>
+        </div>
+    </header>
+    <main class="container mx-auto px-6 py-12">
+        <h2 class="text-2xl font-bold text-center mb-6">IFC Viewer (web-ifc + Three.js)</h2>
+        <input type="file" id="ifc-upload" accept=".ifc" class="border p-2 rounded bg-gray-800 text-white">
+        <div id="error-message" class="text-red-500 hidden mt-2"></div>
+        <canvas id="viewer"></canvas>
+    </main>
+    <script>
+        // Check if THREE is loaded
+        if (typeof THREE === 'undefined') {
+            console.error("Three.js failed to load. Please check the CDN URL for three.min.js.");
+        }
+
+        // Check if IFC is loaded (web-ifc.umd.js exposes IFC globally)
+        const ifcApi = window.IFC ? new window.IFC.IfcAPI() : null;
+        if (!ifcApi) {
+            console.error("web-ifc failed to load. Please check the CDN URL for web-ifc.umd.js.");
+        }
+
+        const canvas = document.getElementById('viewer');
+        const errorMessage = document.getElementById('error-message');
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+        camera.position.set(8, 10, 12);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(10, 20, 15);
+        scene.add(ambientLight, directionalLight);
+
+        // Orbit controls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0, 0);
+        controls.update();
+
+        // Responsive canvas
+        function resizeRenderer() {
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+            renderer.setSize(width, height, false);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        }
+        window.addEventListener('resize', resizeRenderer);
+        resizeRenderer();
+
+        // IFC loader setup
+        let currentModel = null;
+
+        async function initIfcLoader() {
+            try {
+                if (!ifcApi) throw new Error("IFC API not loaded");
+                await ifcApi.Init();
+                ifcApi.SetWasmPath("https://cdn.jsdelivr.net/npm/web-ifc@0.0.44/");
+            } catch (error) {
+                showError("Failed to initialize IFC loader: " + error.message);
+            }
+        }
+        initIfcLoader();
+
+        // Error display
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.remove('hidden');
+            setTimeout(() => errorMessage.classList.add('hidden'), 5000);
+        }
+
+        // File upload handling
+        document.getElementById('ifc-upload').addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file || !file.name.endsWith('.ifc')) {
+                showError("Please upload a valid .ifc file.");
+                return;
+            }
+
+            try {
+                const buffer = await file.arrayBuffer();
+
+                // Clean up previous model
+                if (currentModel) {
+                    scene.remove(currentModel);
+                    ifcApi.CloseModel(currentModel.userData.modelID);
+                    currentModel.traverse((child) => {
+                        if (child.isMesh) {
+                            child.geometry.dispose();
+                            child.material.dispose();
+                        }
+                    });
+                }
+
+                // Load and parse IFC
+                const modelID = ifcApi.OpenModel(new Uint8Array(buffer));
+                const geometries = ifcApi.LoadAllGeometry(modelID);
+
+                // Create mesh
+                const material = new THREE.MeshLambertMaterial({ color: 0xaaaaaa, side: THREE.DoubleSide });
+                const model = new THREE.Group();
+                model.userData.modelID = modelID;
+
+                for (let i = 0; i < geometries.size(); i++) {
+                    const geom = geometries.get(i);
+                    const vertexData = geom.GetVertexData();
+                    const indexData = geom.GetIndexData();
+                    if (vertexData.length === 0 || indexData.length === 0) continue;
+
+                    const geometry = new THREE.BufferGeometry();
+                    geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertexData), 3));
+                    geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indexData), 1));
+                    geometry.computeVertexNormals();
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    model.add(mesh);
+                }
+
+                scene.add(model);
+                currentModel = model;
+
+                // Center camera on model
+                const box = new THREE.Box3().setFromObject(model);
+                const center = box.getCenter(new THREE.Vector3());
+                controls.target.copy(center);
+                camera.position.set(center.x + 8, center.y + 10, center.z + 12);
+                controls.update();
+            } catch (error) {
+                showError("Failed to load IFC file: " + error.message);
+            }
+        });
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IFC Reuse Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <style>
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #2d3748;
+            min-width: 150px;
+            z-index: 10;
+        }
+        .dropdown.active .dropdown-content {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-[#F1FAEE] min-h-screen flex flex-col">
+
+<header class="bg-gray-800 shadow-md py-4 px-6 flex justify-between items-center">
+    <div class="flex items-center space-x-4">
+        <img src="{% static 'images/logo.jpg' %}" alt="Logo" class="h-20 mx-2">
+        <nav class="flex space-x-4 ml-4 text-lg">
+            <a href="{% url 'index' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Home</a>
+            <a href="{% url 'catalog' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Katalog</a>
+            <a href="{% url 'upload_page' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Upload</a>
+            <a href="{% url 'api' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">API</a>
+            <a href="{% url 'about' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Über Uns</a>
+        </nav>
+    </div>
+    <div id="user-section">
+        {% if user.is_authenticated %}
+            <div class="dropdown relative">
+                <button onclick="toggleDropdown(event)" class="text-[#F1FAEE] hover:text-[#4CAF50] flex items-center focus:outline-none">
+                    👤 <span class="ml-1">{{ user.username }}</span>
+                    <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                <div class="dropdown-content bg-gray-700 rounded shadow-lg">
+                    <a href="{% url 'settings' %}" class="block px-4 py-2 hover:bg-gray-600">Einstellungen</a>
+                    <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-gray-600">Profil</a>
+                    <a href="{% url 'logout' %}" class="block px-4 py-2 hover:bg-gray-600">Abmelden</a>
+                </div>
+            </div>
+        {% else %}
+            <a href="{% url 'login' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Login</a>
+        {% endif %}
+    </div>
+</header>
+
+<main class="flex-grow">
+    <section class="text-center mt-12">
+        <h2 class="text-4xl font-bold text-[#F1FAEE]">
+            Finde wiederverwendbare Bauteile für dein Projekt
+        </h2>
+        <p class="text-gray-400 mt-2">
+            Nachhaltiges Bauen durch digitale Katalogisierung von IFC-Bauteilen.
+        </p>
+    </section>
+
+    <div class="mt-6 flex justify-center">
+        <input type="text" placeholder="Suche nach Material, Größe, Standort..."
+            class="w-1/2 border border-gray-600 bg-gray-700 text-[#F1FAEE] rounded-lg p-2">
+        <button class="ml-2 bg-[#4CAF50] text-white px-4 py-2 rounded-lg">🔍</button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 px-6">
+        <a href="{% url 'upload_page' %}" class="bg-gray-800 shadow-md rounded-xl p-6 text-center hover:shadow-lg transition">
+            <span class="text-blue-400 text-4xl">📄</span>
+            <h3 class="text-lg font-semibold mt-2">IFC-Datei hochladen</h3>
+            <p class="text-gray-400">
+                Lade deine IFC-Datei hoch und extrahiere wiederverwendbare Bauteile.
+            </p>
+        </a>
+        <a href="{% url 'catalog' %}" class="bg-gray-800 shadow-md rounded-xl p-6 text-center hover:shadow-lg transition">
+            <span class="text-[#4CAF50] text-4xl">📃</span>
+            <h3 class="text-lg font-semibold mt-2">Bauteil-Katalog</h3>
+            <p class="text-gray-400">
+                Durchsuche den Bestand an wiederverwendbaren Bauelementen.
+            </p>
+        </a>
+        <a href="{% url 'api' %}" class="bg-gray-800 shadow-md rounded-xl p-6 text-center hover:shadow-lg transition">
+            <span class="text-orange-400 text-4xl">🔗</span>
+            <h3 class="text-lg font-semibold mt-2">API-Zugang</h3>
+            <p class="text-gray-400">
+                Nutze unsere API, um Bauteile in dein Design zu integrieren.
+            </p>
+        </a>
+    </div>
+</main>
+
+<footer class="bg-gray-800 text-[#F1FAEE] py-2 mt-auto">
+    <div class="container mx-auto px-4 text-center">
+        <h3 class="text-lg font-bold mb-2">Kontakt</h3>
+        <div class="space-y-1 text-sm">
+            <p>E-Mail: <a href="mailto:kontakt@ifc-reuse.com" class="text-[#4CAF50] hover:underline">kontakt@ifc-reuse.com</a></p>
+            <p>Adresse: An d. Hochschule 1, 86161 Augsburg</p>
+            <p>Telefon: 0821 55860</p>
+            <p>Öffnungszeiten: Montag bis Freitag 9:00–17:00</p>
+        </div>
+        <p class="text-xs text-gray-400 mt-2">&copy; 2025 IFC Reuse Platform. Alle Rechte vorbehalten.</p>
+    </div>
+</footer>
+
+<script>
+function toggleDropdown(event) {
+    event.stopPropagation();
+    document.querySelector('.dropdown').classList.toggle('active');
+}
+document.addEventListener('click', () => {
+    const dropdown = document.querySelector('.dropdown');
+    if (dropdown) dropdown.classList.remove('active');
+});
+</script>
+
+</body>
+</html>
