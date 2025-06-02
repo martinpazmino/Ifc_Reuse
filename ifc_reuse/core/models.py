@@ -1,11 +1,12 @@
 from django.db import models
 
 class ReusableComponent(models.Model):
-    global_id = models.CharField(max_length=64, unique=True)
-    name = models.CharField(max_length=256)
-    type = models.CharField(max_length=128)
-    user_comment = models.TextField(blank=True, null=True)
+    global_id = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255)
+    type = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
+    metadata_url = models.URLField(max_length=500, null=True, blank=True)
+    fragment_url = models.URLField(max_length=500, null=True, blank=True)
 
     def __str__(self):
         return self.name

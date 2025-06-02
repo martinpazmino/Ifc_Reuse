@@ -11,7 +11,18 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 import os
 from pathlib import Path
+import mimetypes
 
+# Add JavaScript module MIME types
+mimetypes.add_type('text/javascript', '.js', True)
+mimetypes.add_type('text/javascript', '.mjs', True)
+mimetypes.add_type('text/javascript', '.cjs', True)
+
+# Alternative: Configure in STATICFILES_STORAGE if using custom storage
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+]
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -52,6 +63,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+
 ]
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # your Vite frontend
@@ -124,6 +136,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'core/static'),
     BASE_DIR / "static",  # Where your app-level static files are (e.g., css/styles.css)
     BASE_DIR / "ifc_reuse/static",
     BASE_DIR / "frontend/dist",# If you have app-specific static files

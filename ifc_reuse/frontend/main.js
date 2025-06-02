@@ -1,4 +1,3 @@
-// Core Three.js import (needed immediately)
 import * as THREE from 'three';
 import * as BUI from '@thatopen/ui';
 
@@ -193,14 +192,21 @@ async function loadIfc() {
     console.log('⏳ Loading IFC...');
     try {
         const modelId = window.location.pathname.split('/').pop();
+        if (!modelId) {
+            console.warn('⚠️ Empty model_id from URL. Falling back to first available IFC file.');
+        }
         console.log('🧪 Fetching IFC file for model_id:', modelId);
 
-        const response = await fetch('/api/ifc-files/');
+        const response = await fetch('/ifc-files/');
         if (!response.ok) throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
         const files = await response.json();
         console.log('🧪 API response:', files);
 
-        const file = files.find(f => f.url.includes(modelId));
+        let file = files.find(f => f.url.includes(modelId));
+        if (!file && files.length > 0) {
+            console.warn('⚠️ No IFC file found for model_id:', modelId, 'Using first available file.');
+            file = files[0];
+        }
         if (!file) throw new Error(`No IFC file found for model_id: ${modelId}`);
         console.log('🧪 Found IFC file:', file.url);
 
@@ -212,7 +218,7 @@ async function loadIfc() {
 
         model = await fragmentIfcLoader.load(buffer);
         if (!model) throw new Error('Failed to load IFC model');
-        model.name = modelId;
+        model.name = modelId || file.name;
         world.scene.three.add(model);
         console.log('✅ IFC model loaded:', model);
 
@@ -256,8 +262,9 @@ function exportFragments() {
         console.warn('⚠️ No fragment group found for model UUID:', modelGroupUUID);
         return;
     }
-    if (typeof fragments.exportFragments === 'function') {
-        const fragData = fragments.exportFragments(group);
+    // Check for export method (e.g., fragments.export instead of exportFragments)
+    if (typeof fragments.export === 'function') {
+        const fragData = fragments.export(group);
         if (fragData) {
             const blob = new Blob([fragData]);
             const url = URL.createObjectURL(blob);
@@ -271,7 +278,7 @@ function exportFragments() {
             console.warn('⚠️ Failed to export fragments');
         }
     } else {
-        console.warn('⚠️ fragments.exportFragments is not available');
+        console.warn('⚠️ fragments.export is not available');
     }
 }
 
@@ -331,23 +338,36 @@ function setupSelection() {
                 return;
             }
 
-            let selectedFragmentID = fragmentID;
-            let group = fragments.groups.get(fragmentID);
-            if (!group) {
-                console.warn('⚠️ Invalid fragmentID in selection:', fragmentID, 'Falling back to model UUID');
-                selectedFragmentID = modelGroupUUID;
-                group = fragments.groups.get(selectedFragmentID);
-                if (!group) {
-                    console.warn('⚠️ No fragment group found for model UUID:', selectedFragmentID);
-                    lastSelected = null;
-                    saveButton.style.display = 'none';
-                    return;
-                }
+            // Validate fragments.groups and modelGroupUUID
+            if (!fragments.groups || !fragments.groups.size) {
+                console.error('❌ FragmentsManager groups map is empty or not initialized');
+                lastSelected = null;
+                saveButton.style.display = 'none';
+                return;
             }
+
+            if (!modelGroupUUID) {
+                console.error('❌ modelGroupUUID is not set. Cannot process selection.');
+                lastSelected = null;
+                saveButton.style.display = 'none';
+                return;
+            }
+
+            const group = fragments.groups.get(modelGroupUUID);
+            if (!group) {
+                console.error('❌ No fragment group found for model UUID:', modelGroupUUID);
+                console.log('🧪 Current model:', model);
+                console.log('🧪 Available groups:', Array.from(fragments.groups.keys()));
+                lastSelected = null;
+                saveButton.style.display = 'none';
+                return;
+            }
+
+            console.log('🧪 Using fragment group for model UUID:', modelGroupUUID);
 
             lastSelected = {
                 id: expressIDs[0],
-                fragments: [{ id: selectedFragmentID }],
+                fragments: [{ id: modelGroupUUID }],
             };
 
             console.log('✅ Selection parsed:', lastSelected);
@@ -389,7 +409,6 @@ function setupSelection() {
                 let props = null;
                 console.log('🧪 Retrieving properties for expressID:', expressID);
                 try {
-                    await propertiesManager.init();
                     props = await propertiesManager.getItemProperties(model, expressID);
                     if (!props) throw new Error('No properties returned');
                 } catch (err) {
@@ -403,34 +422,44 @@ function setupSelection() {
                 console.log('🧠 Properties:', props);
 
                 let fragData = null;
-                if (typeof fragments.exportFragments === 'function') {
+                if (typeof fragments.export === 'function') {
                     console.log('🧪 Exporting fragment data for group:', fragmentID);
-                    fragData = fragments.exportFragments(group);
+                    fragData = fragments.export(group);
                     if (!fragData) console.warn('⚠️ Failed to export fragment data for fragmentID:', fragmentID);
                 } else {
-                    console.warn('⚠️ fragments.exportFragments is not available. Skipping geometry export.');
+                    console.warn('⚠️ fragments.export is not available. Skipping geometry export.');
                 }
 
-                const dirHandle = await window.showDirectoryPicker();
-                console.log('🗂️ Directory selected:', dirHandle.name);
-
+                // Prepare files for upload
                 const nameBase = props.GlobalId || `frag_${expressID}`;
-                const jsonFileHandle = await dirHandle.getFileHandle(`${nameBase}.json`, { create: true });
-                const jsonWritable = await jsonFileHandle.createWritable();
-                await jsonWritable.write(JSON.stringify(props, null, 2));
-                await jsonWritable.close();
-                console.log('✅ Metadata saved:', `${nameBase}.json`);
-
+                const formData = new FormData();
+                formData.append('metadata', new Blob([JSON.stringify(props, null, 2)], { type: 'application/json' }), `${nameBase}.json`);
                 if (fragData) {
-                    const fragFileHandle = await dirHandle.getFileHandle(`${nameBase}.frag`, { create: true });
-                    const fragWritable = await fragFileHandle.createWritable();
-                    await fragWritable.write(fragData);
-                    await fragWritable.close();
-                    console.log('✅ Fragment data saved:', `${nameBase}.frag`);
+                    formData.append('fragment', new Blob([fragData], { type: 'application/octet-stream' }), `${nameBase}.frag`);
                 }
 
-                alert('✅ Component saved locally!');
-                saveButton.style.display = 'none';
+                // Send files to the server
+                console.log('🕒 Sending fetch request to /upload-fragment/');
+                const response = await fetch('/upload-fragment/', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                console.log('📡 Response status:', response.status);
+                if (!response.ok) {
+                    const text = await response.text();
+                    console.error('❌ Raw response:', text);
+                    throw new Error(`Server returned status ${response.status}: ${text}`);
+                }
+
+                const result = await response.json();
+                if (response.ok && result.status === 'ok') {
+                    console.log('✅ Files uploaded:', result);
+                    alert('✅ Component saved to server!');
+                    saveButton.style.display = 'none';
+                } else {
+                    throw new Error(result.message || 'Failed to upload files');
+                }
             } catch (err) {
                 console.error('❌ Save error:', err);
                 alert('❌ Failed to save component: ' + err.message);

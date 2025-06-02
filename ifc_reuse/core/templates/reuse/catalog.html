@@ -1,198 +1,65 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="de" class="flex flex-col min-h-screen bg-gray-900 text-[#F1FAEE]">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bauteil-Katalog</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <title>Bauteil-Katalog | IFC Reuse Platform</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <!-- Load libraries in correct order -->
+
+    <script type="module" src="{% static 'js/libs/thatopen-components.js' %}"></script>
+    <script type="module" src="{% static 'js/libs/thatopen-components-front.js' %}"></script>
+    <script type="module" src="{% static 'js/libs/thatopen-ui.js' %}"></script>
+    <script type="module" src="{% static 'core/static/js/catalog.js' %}"></script>
+
 </head>
-<body class="flex flex-col flex-grow">
-    <header class="bg-gray-800 shadow-md py-4 px-6 flex justify-between items-center">
-        <div class="flex items-center space-x-4">
-            <img src="{% static 'images/logo.jpg' %}" alt="Logo" class="h-20 mx-2">
-            <nav class="flex space-x-4 ml-4 text-lg">
-                <a href="{% url 'index' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Home</a>
-                <a href="{% url 'catalog' %}" class="text-[#4CAF50] font-semibold">Katalog</a>
-                <a href="{% url 'upload_page' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Upload</a>
-                <a href="{% url 'api' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">API</a>
-                <a href="{% url 'about' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Über Uns</a>
-            </nav>
-        </div>
-        <div class="dropdown relative">
-            <button onclick="toggleDropdown(event)" class="text-[#F1FAEE] hover:text-[#4CAF50]">👤 Benutzer</button>
-            <div class="dropdown-content bg-gray-700 rounded shadow-lg hidden absolute right-0 mt-2 w-48 z-10">
-                <a href="#" class="block px-4 py-2 hover:bg-gray-600">Einstellungen</a>
-                <a href="#" class="block px-4 py-2 hover:bg-gray-600">Profil</a>
-                <a href="#" class="block px-4 py-2 hover:bg-gray-600">Abmelden</a>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="{% url 'index' %}">Home</a></li>
+                <li><a href="{% url 'catalog' %}">Katalog</a></li>
+                <li><a href="{% url 'upload_page' %}">Upload</a></li>
+                <li><a href="{% url 'api' %}">API</a></li>
+                <li><a href="{% url 'about' %}">Über Uns</a></li>
+            </ul>
+            <div class="user-menu">
+                <span>👤 Benutzer</span>
+                <ul>
+                    <li><a href="#">Einstellungen</a></li>
+                    <li><a href="#">Profil</a></li>
+                    <li><a href="#">Abmelden</a></li>
+                </ul>
             </div>
-        </div>
+        </nav>
     </header>
 
-    <main class="flex-grow px-6">
-        <section class="text-center mt-12">
-            <h2 class="text-4xl font-bold text-[#F1FAEE]">Bauteil-Katalog</h2>
-            <p class="text-gray-400 mt-2">Durchsuche wiederverwendbare Bauteile nach Material, Größe oder Standort.</p>
+    <main>
+        <section>
+            <h1>Bauteil-Katalog</h1>
+            <p>Durchsuche wiederverwendbare Bauteile nach Material, Größe oder Standort.</p>
+            <div>
+                <h2>Verfügbare Fragmente</h2>
+                <select id="fragment-select">
+                    <option value="">Wähle ein Fragment</option>
+                </select>
+                <div id="container" style="width: 100%; height: 60vh; border: 1px solid #ccc; margin-top: 20px; background-color: #f5f5f5;"></div>
+                <div id="loading-indicator" style="display: none; text-align: center; padding: 20px;">
+                    <p>Lade Fragment...</p>
+                </div>
+            </div>
         </section>
-        <div class="mt-8" id="projects-container"></div>
     </main>
 
-    <footer class="bg-gray-800 text-[#F1FAEE] py-4 mt-auto">
-        <div class="container mx-auto px-4 text-center">
-            <h3 class="text-lg font-bold mb-2">Kontakt</h3>
-            <div class="space-y-1 text-sm">
-                <p>E-Mail: <a href="mailto:kontakt@ifc-reuse.com" class="text-[#4CAF50] hover:underline">kontakt@ifc-reuse.com</a></p>
-                <p>Adresse: An d. Hochschule 1, 86161 Augsburg</p>
-                <p>Telefon: 0821 55860</p>
-                <p>Öffnungszeiten: Mo–Fr 9:00–17:00</p>
-            </div>
-            <p class="text-xs text-gray-400 mt-2">© 2025 IFC Reuse Platform. Alle Rechte vorbehalten.</p>
-        </div>
+    <footer>
+        <h2>Kontakt</h2>
+        <p>E-Mail: <a href="mailto:kontakt@ifc-reuse.com">kontakt@ifc-reuse.com</a></p>
+        <p>Adresse: An d. Hochschule 1, 86161 Augsburg</p>
+        <p>Telefon: <a href="tel:+4982155860">0821 55860</a></p>
+        <p>Öffnungszeiten: Mo–Fr 9:00–17:00</p>
+        <p>© 2025 IFC Reuse Platform. Alle Rechte vorbehalten.</p>
     </footer>
-
-    <script>
-        // Toggle dropdown menu
-        function toggleDropdown(event) {
-            event.stopPropagation();
-            const dropdown = event.currentTarget.nextElementSibling;
-            dropdown.classList.toggle('hidden');
-        }
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', (event) => {
-            const dropdowns = document.querySelectorAll('.dropdown-content');
-            dropdowns.forEach(dropdown => {
-                if (!dropdown.classList.contains('hidden') && !dropdown.parentElement.contains(event.target)) {
-                    dropdown.classList.add('hidden');
-                }
-            });
-        });
-
-        // Fetch projects and components from the FastAPI backend
-        async function loadProjects() {
-            try {
-                const response = await fetch('http://127.0.0.1:8001/projects/');
-                const projects = await response.json();
-                const container = document.getElementById('projects-container');
-
-                if (projects.length === 0) {
-                    container.innerHTML = '<p class="text-gray-500 text-center">Keine Bauteile gefunden. Bitte lade ein Projekt hoch.</p>';
-                    return;
-                }
-
-                projects.forEach(project => {
-                    const projectDiv = document.createElement('div');
-                    projectDiv.className = 'mb-8';
-                    projectDiv.innerHTML = `<h3 class="text-2xl font-semibold text-[#F1FAEE] mb-4">🔎 ${project.name}</h3>`;
-                    const componentsGrid = document.createElement('div');
-                    componentsGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
-                    projectDiv.appendChild(componentsGrid);
-
-                    if (project.components && project.components.length > 0) {
-                        project.components.forEach(component => {
-                            const componentCard = document.createElement('div');
-                            componentCard.className = 'bg-gray-800 p-4 rounded shadow';
-                            componentCard.innerHTML = `
-                                <h4 class="text-xl font-bold text-[#4CAF50]">${component.name}</h4>
-                                <p class="text-gray-400">Typ: ${component.type}</p>
-                                <canvas class="w-full h-64 mt-4 bg-gray-700 rounded" id="canvas-${component.id}"></canvas>
-                            `;
-                            componentsGrid.appendChild(componentCard);
-
-                            // Delay the Three.js initialization to ensure the canvas is in the DOM
-                            setTimeout(() => {
-                                console.log(`Initializing Three.js for component ${component.id}`);
-                                const canvasCheck = document.getElementById(`canvas-${component.id}`);
-                                if (canvasCheck) {
-                                    initThreeJsScene(component.id, `http://127.0.0.1:8001/components/${component.id}/glb`);
-                                } else {
-                                    console.error(`Canvas still not found after delay for component ${component.id}`);
-                                }
-                            }, 100); // 100ms delay to allow DOM update
-                        });
-                    } else {
-                        componentsGrid.innerHTML = '<p class="text-gray-500 text-center">Keine Komponenten für dieses Projekt.</p>';
-                    }
-
-                    container.appendChild(projectDiv);
-                });
-            } catch (error) {
-                console.error('Error loading projects:', error);
-                const container = document.getElementById('projects-container');
-                container.innerHTML = '<p class="text-gray-500 text-center">Fehler beim Laden der Projekte. Bitte versuche es später erneut.</p>';
-            }
-        }
-
-        // Initialize Three.js scene for a single component
-        function initThreeJsScene(componentId, glbUrl) {
-            const canvas = document.getElementById(`canvas-${componentId}`);
-            if (!canvas) {
-                console.error(`Canvas not found for component ${componentId}`);
-                return;
-            }
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-
-            // Add lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-            scene.add(ambientLight);
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-            directionalLight.position.set(1, 1, 1);
-            scene.add(directionalLight);
-
-            // Add OrbitControls
-            const controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-
-            // Load GLB model
-            const loader = new THREE.GLTFLoader();
-            loader.load(
-                glbUrl,
-                (gltf) => {
-                    const model = gltf.scene;
-                    scene.add(model);
-
-                    // Center and scale model
-                    const box = new THREE.Box3().setFromObject(model);
-                    const center = box.getCenter(new THREE.Vector3());
-                    const size = box.getSize(new THREE.Vector3());
-                    const maxDim = Math.max(size.x, size.y, size.z);
-                    const scale = 2 / maxDim;
-                    model.scale.set(scale, scale, scale);
-                    model.position.sub(center.multiplyScalar(scale));
-
-                    camera.position.z = 3;
-                    controls.update();
-                },
-                undefined,
-                (error) => {
-                    console.error(`Error loading GLB for ${componentId}:`, error);
-                    canvas.parentElement.innerHTML += '<p class="text-gray-500 text-center mt-2">Fehler beim Laden des Modells.</p>';
-                }
-            );
-
-            // Animation loop
-            function animate() {
-                requestAnimationFrame(animate);
-                controls.update();
-                renderer.render(scene, camera);
-            }
-            animate();
-
-            // Handle window resize
-            window.addEventListener('resize', () => {
-                camera.aspect = canvas.clientWidth / canvas.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-            });
-        }
-
-        // Load projects on page load
-        window.onload = loadProjects;
-    </script>
+</body>
+</html></content>
+</invoke>
