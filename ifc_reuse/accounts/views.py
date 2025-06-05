@@ -14,7 +14,7 @@ def register(request):
             user.save()
             login(request, user)
             messages.success(request, "Registrierung erfolgreich!")
-            return redirect('home')
+            return redirect('index')
         else:
             messages.error(request, "Registrierung fehlgeschlagen. Bitte überprüfe deine Eingaben.")
     else:
@@ -28,7 +28,7 @@ def user_login(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect('home')
+            return redirect('index')
         else:
             messages.error(request, "Ungültiger Benutzername oder Passwort.")
     return render(request, 'accounts/login.html')
