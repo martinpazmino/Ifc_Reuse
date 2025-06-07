@@ -1,108 +1,274 @@
-{% extends "reuse/base.html" %}
 {% load static %}
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de" class="min-h-screen flex flex-col bg-gray-900 text-[#F1FAEE]">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IFC Component Selection</title>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <script src="https://unpkg.com/three"></script>
-    <script src="https://unpkg.com/@web-ifc/web-ifc-three"></script>
+    <title>Einstellungen - IFC Reuse Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #2d3748;
+            min-width: 150px;
+            z-index: 10;
+        }
+        .dropdown.active .dropdown-content {
+            display: block;
+        }
+        .modal-bg {
+            background: rgba(0, 0, 0, 0.7);
+        }
+        .toggle-btn.active {
+            background-color: #4CAF50;
+        }
+        .toggle-btn {
+            background-color: #6b7280;
+        }
+    </style>
 </head>
-<body>
-    <header>
-        <nav>
-            <ul>
-                <li><a href="{% url 'index' %}">Home</a></li>
-                <li><a href="{% url 'catalog' %}">Katalog</a></li>
-                <li><a href="{% url 'upload_page' %}">Upload</a></li>
-                <li><a href="{% url 'api' %}">API</a></li>
-                <li><a href="{% url 'about' %}">Über Uns</a></li>
-            </ul>
-        </nav>
+<body class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-gray-800 shadow-md py-4 px-6 flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+            <img src="{% static 'images/logo.jpg' %}" alt="Logo" class="h-20 mx-2">
+            <nav class="flex space-x-4 ml-4 text-lg">
+                <a href="{% url 'core:index' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Home</a>
+                <a href="{% url 'core:catalog' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Katalog</a>
+                <a href="{% url 'core:upload_page' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Upload</a>
+                <a href="{% url 'core:api' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">API</a>
+                <a href="{% url 'core:about' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Über Uns</a>
+            </nav>
+        </div>
+        <div id="user-section">
+            {% if user.is_authenticated %}
+                <div class="dropdown relative">
+                    <button onclick="toggleDropdown(event)" class="text-[#F1FAEE] hover:text-[#4CAF50] flex items-center focus:outline-none">
+                        👤 <span class="ml-1">{{ user.username }}</span>
+                        <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div class="dropdown-content bg-gray-700 rounded shadow-lg">
+                        <a href="{% url 'core:settings' %}" class="block px-4 py-2 hover:bg-gray-600 font-semibold">Einstellungen</a>
+                        <a href="{% url 'accounts:profile' %}" class="block px-4 py-2 hover:bg-gray-600">Profil</a>
+                        <a href="{% url 'accounts:logout' %}" class="block px-4 py-2 hover:bg-gray-600">Abmelden</a>
+                    </div>
+                </div>
+            {% else %}
+                <button id="login-btn" class="text-[#F1FAEE] hover:text-[#4CAF50]">Login</button>
+            {% endif %}
+        </div>
     </header>
-
-    <main>
-        <h1>IFC Component Selection</h1>
-        <p>Filename: {{ filename }}</p>
-        <div id="viewer" style="width: 100%; height: 500px;"></div>
-        <label>
-            <input type="checkbox" id="reuseFlag"> Mark Reusable
-        </label>
-        <button id="saveButton">Save</button>
-        <div id="status"></div>
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-12 flex-grow">
+        <h1 class="text-2xl font-bold text-center mb-6">Einstellungen</h1>
+        <div class="max-w-2xl mx-auto space-y-8">
+            <!-- Messages -->
+            {% if messages %}
+                <div class="mb-6">
+                    {% for message in messages %}
+                        <p class="text-center text-{% if message.tags == 'error' %}red-400{% else %}green-400{% endif %}">{{ message }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <!-- Theme Selection -->
+            <div>
+                <h2 class="text-xl font-semibold mb-4">Darstellung</h2>
+                <div class="flex space-x-4">
+                    <button id="theme-light" class="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600">Modo Claro</button>
+                    <button id="theme-dark" class="px-4 py-2 rounded-lg bg-[#4CAF50] hover:bg-green-600">Modo Oscuro</button>
+                </div>
+            </div>
+            <!-- Language Selection -->
+            <div>
+                <h2 class="text-xl font-semibold mb-4">Sprache</h2>
+                <select id="language" class="w-full border border-gray-600 bg-gray-700 rounded-lg p-2 text-[#F1FAEE]">
+                    <option value="de">Deutsch</option>
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                </select>
+            </div>
+            <!-- Privacy Settings -->
+            <div>
+                <h2 class="text-xl font-semibold mb-4">Datenschutz</h2>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span>Daten mit Dritten teilen</span>
+                        <button id="privacy-third-party" class="toggle-btn w-12 h-6 rounded-full bg-gray-600 relative transition duration-200">
+                            <span class="absolute w-4 h-4 bg-white rounded-full top-1 transition duration-200 left-1"></span>
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span>Personalisierte Werbung</span>
+                        <button id="privacy-ads" class="toggle-btn w-12 h-6 rounded-full bg-gray-600 relative transition duration-200">
+                            <span class="absolute w-4 h-4 bg-white rounded-full top-1 transition duration-200 left-1"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- Notification Settings -->
+            <div>
+                <h2 class="text-xl font-semibold mb-4">Benachrichtigungen</h2>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span>E-Mail-Benachrichtigungen</span>
+                        <button id="notif-email" class="toggle-btn w-12 h-6 rounded-full bg-gray-600 relative transition duration-200">
+                            <span class="absolute w-4 h-4 bg-white rounded-full top-1 transition duration-200 left-1"></span>
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span>Push-Benachrichtigungen</span>
+                        <button id="notif-push" class="toggle-btn w-12 h-6 rounded-full bg-gray-600 relative transition duration-200">
+                            <span class="absolute w-4 h-4 bg-white rounded-full top-1 transition duration-200 left-1"></span>
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span>Benachrichtigung bei neuen Komponenten</span>
+                        <button id="notif-components" class="toggle-btn w-12 h-6 rounded-full bg-gray-600 relative transition duration-200">
+                            <span class="absolute w-4 h-4 bg-white rounded-full top-1 transition duration-200 left-1"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- Account Settings -->
+            <div>
+                <h2 class="text-xl font-semibold mb-4">Kontoeinstellungen</h2>
+                <div class="space-y-6">
+                    <!-- Change Email -->
+                    <form method="post" action="{% url 'core:settings' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="email">
+                        <label class="block mb-2 font-semibold">E-Mail ändern</label>
+                        <input type="email" name="email" value="{{ user.email }}" class="w-full border border-gray-600 bg-gray-700 rounded-lg p-2 mb-4 text-[#F1FAEE]" required>
+                        <button type="submit" class="w-full bg-[#4CAF50] text-white py-2 rounded-lg font-semibold">E-Mail speichern</button>
+                    </form>
+                    <!-- Change Password -->
+                    <form method="post" action="{% url 'core:settings' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="password">
+                        <label class="block mb-2 font-semibold">Aktuelles Passwort</label>
+                        <input type="password" name="current_password" class="w-full border border-gray-600 bg-gray-700 rounded-lg p-2 mb-4 text-[#F1FAEE]" required>
+                        <label class="block mb-2 font-semibold">Neues Passwort</label>
+                        <input type="password" name="new_password" class="w-full border border-gray-600 bg-gray-700 rounded-lg p-2 mb-4 text-[#F1FAEE]" required>
+                        <label class="block mb-2 font-semibold">Neues Passwort wiederholen</label>
+                        <input type="password" name="new_password_confirm" class="w-full border border-gray-600 bg-gray-700 rounded-lg p-2 mb-4 text-[#F1FAEE]" required>
+                        <button type="submit" class="w-full bg-[#4CAF50] text-white py-2 rounded-lg font-semibold">Passwort speichern</button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </main>
-
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-[#F1FAEE] py-4 mt-auto">
+        <div class="container mx-auto px-4 text-center">
+            <h3 class="text-lg font-bold mb-2">Kontakt</h3>
+            <div class="space-y-1 text-sm">
+                <p>E-Mail: <a href="mailto:kontakt@ifc-reuse.com" class="text-[#4CAF50] hover:underline">kontakt@ifc-reuse.com</a></p>
+                <p>Adresse: An d. Hochschule 1, 86161 Augsburg</p>
+                <p>Telefon: 0821 55860</p>
+                <p>Öffnungszeiten: Mo–Fr 9:00–17:00</p>
+            </div>
+            <p class="text-xs text-gray-400 mt-2">© 2025 IFC Reuse Platform. Alle Rechte vorbehalten.</p>
+        </div>
+    </footer>
+    <!-- Modal -->
+    <div id="modal-overlay" class="fixed z-50 inset-0 flex items-center justify-center modal-bg hidden">
+        <div class="bg-gray-800 rounded-xl p-8 w-full max-w-md relative border border-gray-600">
+            <button id="close-modal" class="absolute top-3 right-3 text-gray-400 hover:text-gray-200 text-xl">×</button>
+            <form id="login-form" action="{% url 'accounts:login' %}" method="post">
+                {% csrf_token %}
+                <h2 class="text-2xl font-bold mb-4 text-center">Login</h2>
+                <label class="block mb-2">Benutzername oder E-Mail</label>
+                <input type="text" name="username" class="w-full border border-gray-600 bg-gray-700 rounded-lg p-2 mb-4 text-[#F1FAEE]" required>
+                <label class="block mb-2">Passwort</label>
+                <input type="password" name="password" class="w-full border border-gray-600 bg-gray-700 rounded-lg p-2 mb-4 text-[#F1FAEE]" required>
+                <button type="submit" class="w-full bg-[#4CAF50] text-white py-2 rounded-lg font-semibold">Anmelden</button>
+                <div class="mt-4 text-center">
+                    <button type="button" id="show-register" class="text-[#4CAF50] hover:underline">Noch keinen Account? Registrieren</button>
+                </div>
+            </form>
+            <form id="register-form" action="{% url 'accounts:register' %}" method="post" class="hidden">
+                {% csrf_token %}
+                <h2 class="text-2xl font-bold mb-4 text-center">Registrieren</h2>
+                <label class="block mb-2">Benutzername</label>
+                <input type="text" name="username" class="w-full border border-gray-600 bg-gray-700 rounded-lg p-2 mb-4 text-[#F1FAEE]" required>
+                <label class="block mb-2">E-Mail</label>
+                <input type="email" name="email" class="w-full border border-gray-600 bg-gray-700 rounded-lg p-2 mb-4 text-[#F1FAEE]" required>
+                <label class="block mb-2">Passwort</label>
+                <input type="password" name="password" class="w-full border border-gray-600 bg-gray-700 rounded-lg p-2 mb-4 text-[#F1FAEE]" required>
+                <label class="block mb-2">Passwort wiederholen</label>
+                <input type="password" name="password_confirm" class="w-full border border-gray-600 bg-gray-700 rounded-lg p-2 mb-4 text-[#F1FAEE]" required>
+                <button type="submit" class="w-full bg-[#4CAF50] text-white py-2 rounded-lg font-semibold">Registrieren</button>
+                <div class="mt-4 text-center">
+                    <button type="button" id="show-login" class="text-[#4CAF50] hover:underline">Zurück zum Login</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- JavaScript -->
     <script>
-        const viewerContainer = document.getElementById('viewer');
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, viewerContainer.offsetWidth / viewerContainer.offsetHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(viewerContainer.offsetWidth, viewerContainer.offsetHeight);
-        viewerContainer.appendChild(renderer.domElement);
-
-        const ifcLoader = new IFCLoader();
-        ifcLoader.ifcManager.setWasmPath('https://unpkg.com/@web-ifc/web-ifc-three@0.0.128/');
-
-        // Load IFC file
-        const filename = "{{ filename }}";
-        ifcLoader.load(`/uploads/${filename}`, (ifcModel) => {
-            scene.add(ifcModel);
-            camera.position.z = 5;
-            const animate = () => {
-                requestAnimationFrame(animate);
-                renderer.render(scene, camera);
-            };
-            animate();
+        window.toggleDropdown = function(event) {
+            event.stopPropagation();
+            const dropdown = event.currentTarget.closest('.dropdown');
+            dropdown.classList.toggle('active');
+        };
+        document.addEventListener('click', function(e) {
+            if (e.target && e.target.id === 'login-btn') {
+                document.getElementById('modal-overlay').classList.remove('hidden');
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('register-form').classList.add('hidden');
+            }
+            if (e.target && (e.target.id === 'close-modal' || e.target.id === 'modal-overlay')) {
+                document.getElementById('modal-overlay').classList.add('hidden');
+            }
+            if (e.target && e.target.id === 'show-register') {
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('register-form').classList.remove('hidden');
+            }
+            if (e.target && e.target.id === 'show-login') {
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('register-form').classList.add('hidden');
+            }
+            if (!e.target.closest('.dropdown')) {
+                document.querySelectorAll('.dropdown').forEach(drop => drop.classList.remove('active'));
+            }
         });
-
-        let selectedComponents = [];
-
-        // Handle component selection
-        viewerContainer.addEventListener('click', async (event) => {
-            const rect = viewerContainer.getBoundingClientRect();
-            const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-            const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-            const raycaster = new THREE.Raycaster();
-            raycaster.setFromCamera({ x, y }, camera);
-            const intersects = raycaster.intersectObjects(scene.children, true);
-            if (intersects.length > 0) {
-                const component = intersects[0].object;
-                const expressID = component.expressID; // IFC.js assigns expressID to components
-                if (selectedComponents.includes(expressID)) {
-                    selectedComponents = selectedComponents.filter(id => id !== expressID);
-                    component.material.color.set(0xffffff); // Reset color
+        // Theme toggle
+        document.getElementById('theme-light').addEventListener('click', () => {
+            document.getElementById('theme-light').classList.add('bg-[#4CAF50]', 'hover:bg-green-600');
+            document.getElementById('theme-light').classList.remove('bg-gray-700', 'hover:bg-gray-600');
+            document.getElementById('theme-dark').classList.add('bg-gray-700', 'hover:bg-gray-600');
+            document.getElementById('theme-dark').classList.remove('bg-[#4CAF50]', 'hover:bg-green-600');
+        });
+        document.getElementById('theme-dark').addEventListener('click', () => {
+            document.getElementById('theme-dark').classList.add('bg-[#4CAF50]', 'hover:bg-green-600');
+            document.getElementById('theme-dark').classList.remove('bg-gray-700', 'hover:bg-gray-600');
+            document.getElementById('theme-light').classList.add('bg-gray-700', 'hover:bg-gray-600');
+            document.getElementById('theme-light').classList.remove('bg-[#4CAF50]', 'hover:bg-green-600');
+        });
+        // Toggle buttons
+        function setupToggle(id) {
+            const btn = document.getElementById(id);
+            btn.addEventListener('click', () => {
+                btn.classList.toggle('active');
+                const toggle = btn.querySelector('span');
+                if (btn.classList.contains('active')) {
+                    toggle.classList.remove('left-1');
+                    toggle.classList.add('left-7');
                 } else {
-                    selectedComponents.push(expressID);
-                    component.material.color.set(0x00ff00); // Highlight green
+                    toggle.classList.remove('left-7');
+                    toggle.classList.add('left-1');
                 }
-            }
-        });
-
-        // Save selected components
-        document.getElementById('saveButton').addEventListener('click', async () => {
-            const reuseFlag = document.getElementById('reuseFlag').checked;
-            try {
-                const response = await fetch('{% url "save_components" %}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: JSON.stringify({
-                        filename: filename,
-                        componentIds: selectedComponents,
-                        reuseFlag: reuseFlag
-                    })
-                });
-                const result = await response.json();
-                document.getElementById('status').innerText = result.message || 'Error saving components';
-            } catch (error) {
-                document.getElementById('status').innerText = `Error: ${error.message}`;
-            }
-        });
+            });
+        }
+        setupToggle('privacy-third-party');
+        setupToggle('privacy-ads');
+        setupToggle('notif-email');
+        setupToggle('notif-push');
+        setupToggle('notif-components');
     </script>
 </body>
 </html>

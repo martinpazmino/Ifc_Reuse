@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Profil{% endblock %}
+{% block content %}
+<section class="text-center">
+    <h2 class="text-4xl font-bold mb-6">Dein Profil</h2>
+</section>
+<div class="bg-gray-800 rounded-xl p-8 shadow-md max-w-4xl mx-auto">
+    <div class="flex flex-col md:flex-row items-center md:items-start mb-8">
+        <div class="flex-shrink-0">
+            <img src="{{ user.profile.image.url }}" alt="Profilbild" class="w-32 h-32 rounded-full object-cover border-2 border-[#4CAF50]">
+            <form action="{% url 'upload_profile_image' %}" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="file" name="profile_picture" accept="image/*" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#4CAF50] file:text-white hover:file:bg-[#45a049]">
+                <button type="submit" class="mt-2 bg-[#4CAF50] text-white py-2 px-4 rounded-lg">Hochladen</button>
+            </form>
+        </div>
+        <div class="md:ml-6 mt-4 md:mt-0 text-center md:text-left">
+            <h3 class="text-xl font-semibold">Benutzername: {{ user.username|default:'Benutzer' }}</h3>
+            <p class="text-gray-400">E-Mail: {{ user.email|default:'user@example.com' }}</p>
+            <p class="text-gray-400">Registriert seit: {{ user.date_joined|date:'d.m.Y'|default:'01.01.2025' }}</p>
+            <a href="{% url 'edit_profile' %}" class="mt-4 inline-block bg-[#4CAF50] text-white py-2 px-4 rounded-lg">Kontodaten bearbeiten</a>
+        </div>
+    </div>
+    <div class="border-b border-gray-600 mb-6">
+        <nav class="flex space-x-4">
+            <button id="uploads-tab" class="py-2 px-4 text-[#F1FAEE] border-b-2 border-[#4CAF50]">Hochgeladene Inhalte</button>
+            <button id="saved-tab" class="py-2 px-4 text-gray-400">Gespeicherte Inhalte</button>
+        </nav>
+    </div>
+    <div id="uploads-content">
+        {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                    <p class="text-center text-{% if message.tags == 'error' %}red-400{% else %}green-400{% endif %}">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% if error %}
+            <p class="text-center text-red-400 mb-6">{{ error }}</p>
+        {% endif %}
+        {% if projects %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for project in projects %}
+                    <div class="bg-gray-800 shadow-md rounded-xl p-6 hover:shadow-lg transition">
+                        <h3 class="text-xl font-semibold text-[#F1FAEE] mb-4">{{ project.name }}</h3>
+                        <ul class="space-y-2">
+                            {% for component in project.components %}
+                                <li class="text-gray-400">
+                                    {{ component.name }} <span class="text-[#4CAF50]">({{ component.type }})</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-center text-gray-400">Keine Projekte verfügbar.</p>
+        {% endif %}
+    </div>
+    <div id="saved-content" class="hidden">
+        {% if user_saved %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for saved in user_saved %}
+                    <div class="bg-gray-700 rounded-xl p-4 shadow-md">
+                        <h4 class="text-lg font-semibold">{{ saved.name }}</h4>
+                        <p class="text-gray-400">Typ: {{ saved.type }}</p>
+                        <p class="text-gray-400">Gespeichert: {{ saved.saved_date|date:'d.m.Y' }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-center text-gray-400">Keine gespeicherten Inhalte verfügbar.</p>
+        {% endif %}
+    </div>
+</div>
+{% block scripts %}
+<script>
+    const uploadsTab = document.getElementById('uploads-tab');
+    const savedTab = document.getElementById('saved-tab');
+    const uploadsContent = document.getElementById('uploads-content');
+    const savedContent = document.getElementById('saved-content');
+
+    uploadsTab.addEventListener('click', () => {
+        uploadsTab.classList.add('text-[#F1FAEE]', 'border-b-2', 'border-[#4CAF50]');
+        savedTab.classList.remove('text-[#F1FAEE]', 'border-b-2', 'border-[#4CAF50]');
+        savedTab.classList.add('text-gray-400');
+        uploadsContent.classList.remove('hidden');
+        savedContent.classList.add('hidden');
+    });
+
+    savedTab.addEventListener('click', () => {
+        savedTab.classList.add('text-[#F1FAEE]', 'border-b-2', 'border-[#4CAF50]');
+        uploadsTab.classList.remove('text-[#F1FAEE]', 'border-b-2', 'border-[#4CAF50]');
+        uploadsTab.classList.add('text-gray-400');
+        savedContent.classList.remove('hidden');
+        uploadsContent.classList.add('hidden');
+    });
+</script>
+{% endblock %}

@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -5,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Abmelden - IFC Reuse Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    {% load static %}
     <style>
         .dropdown-content {
             display: none;
@@ -27,13 +27,13 @@
     <!-- Header -->
     <header class="bg-gray-800 shadow-md py-4 px-6 flex justify-between items-center">
         <div class="flex items-center space-x-4">
-            <img src="{% static 'logo.jpg' %}" alt="Logo" class="h-20 mx-2" />
+            <img src="{% static 'images/logo.jpg' %}" alt="Logo" class="h-20 mx-2">
             <nav class="flex space-x-4 ml-4 text-lg">
-                <a href="index.html" class="text-[#F1FAEE] hover:text-[#4CAF50]">Home</a>
-                <a href="catalog.html" class="text-[#F1FAEE] hover:text-[#4CAF50]">Katalog</a>
-                <a href="upload.html" class="text-[#F1FAEE] hover:text-[#4CAF50]">Upload</a>
-                <a href="api.html" class="text-[#F1FAEE] hover:text-[#4CAF50]">API</a>
-                <a href="about.html" class="text-[#F1FAEE] hover:text-[#4CAF50]">Über Uns</a>
+                <a href="{% url 'index' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Home</a>
+                <a href="{% url 'catalog' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Katalog</a>
+                <a href="{% url 'upload_page' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Upload</a>
+                <a href="{% url 'api' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">API</a>
+                <a href="{% url 'about' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Über Uns</a>
             </nav>
         </div>
         <div id="user-section">
@@ -41,7 +41,9 @@
                 <div class="dropdown relative">
                     <button onclick="toggleDropdown(event)" class="text-[#F1FAEE] hover:text-[#4CAF50] flex items-center focus:outline-none">
                         👤 <span class="ml-1">{{ user.username }}</span>
-                        <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
                     </button>
                     <div class="dropdown-content bg-gray-700 rounded shadow-lg">
                         <a href="{% url 'settings' %}" class="block px-4 py-2 hover:bg-gray-600">Einstellungen</a>
@@ -60,7 +62,7 @@
         <section class="text-center">
             <h2 class="text-4xl font-bold text-[#F1FAEE] mb-6">Erfolgreich abgemeldet</h2>
             <p class="text-gray-400 mb-6">Sie haben sich erfolgreich von der IFC Reuse Platform abgemeldet.</p>
-            <a href="{% url 'home' %}" class="inline-block bg-[#4CAF50] text-white py-2 px-4 rounded-lg">Zurück zur Startseite</a>
+            <a href="{% url 'index' %}" class="inline-block bg-[#4CAF50] text-white py-2 px-4 rounded-lg">Zurück zur Startseite</a>
         </section>
     </main>
 
@@ -78,18 +80,48 @@
         </div>
     </footer>
 
-
+    <!-- Modal -->
+    <div id="modal-overlay" class="fixed z-50 inset-0 flex items-center justify-center modal-bg hidden">
+        <div class="bg-gray-800 rounded-xl p-8 w-full max-w-md relative border border-gray-600">
+            <button id="close-modal" class="absolute top-3 right-3 text-gray-400 hover:text-gray-200 text-xl">×</button>
+            <form id="login-form" action="{% url 'login' %}" method="post">
+                {% csrf_token %}
+                <h2 class="text-2xl font-bold mb-4 text-center">Login</h2>
+                <label class="block mb-2">Benutzername oder E-Mail</label>
+                <input type="text" name="username" class="w-full border border-gray-600 bg-gray-700 rounded-lg p-2 mb-4 text-[#F1FAEE]" required>
+                <label class="block mb-2">Passwort</label>
+                <input type="password" name="password" class="w-full border border-gray-600 bg-gray-700 rounded-lg p-2 mb-4 text-[#F1FAEE]" required>
+                <button type="submit" class="w-full bg-[#4CAF50] text-white py-2 rounded-lg font-semibold">Anmelden</button>
+                <div class="mt-4 text-center">
+                    <button type="button" id="show-register" class="text-[#4CAF50] hover:underline">Noch keinen Account? Registrieren</button>
+                </div>
+            </form>
+            <form id="register-form" action="{% url 'register' %}" method="post" class="hidden">
+                {% csrf_token %}
+                <h2 class="text-2xl font-bold mb-4 text-center">Registrieren</h2>
+                <label class="block mb-2">Benutzername</label>
+                <input type="text" name="username" class="w-full border border-gray-600 bg-gray-700 rounded-lg p-2 mb-4 text-[#F1FAEE]" required>
+                <label class="block mb-2">E-Mail</label>
+                <input type="email" name="email" class="w-full border border-gray-600 bg-gray-700 rounded-lg p-2 mb-4 text-[#F1FAEE]" required>
+                <label class="block mb-2">Passwort</label>
+                <input type="password" name="password" class="w-full border border-gray-600 bg-gray-700 rounded-lg p-2 mb-4 text-[#F1FAEE]" required>
+                <label class="block mb-2">Passwort wiederholen</label>
+                <input type="password" name="password_confirm" class="w-full border border-gray-600 bg-gray-700 rounded-lg p-2 mb-4 text-[#F1FAEE]" required>
+                <button type="submit" class="w-full bg-[#4CAF50] text-white py-2 rounded-lg font-semibold">Registrieren</button>
+                <div class="mt-4 text-center">
+                    <button type="button" id="show-login" class="text-[#4CAF50] hover:underline">Zurück zum Login</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- JavaScript -->
     <script>
-        // Dropdown Logik
         window.toggleDropdown = function(event) {
             event.stopPropagation();
             const dropdown = event.currentTarget.closest('.dropdown');
             dropdown.classList.toggle('active');
         };
-
-        // Modal-Logik
         document.addEventListener('click', function(e) {
             if (e.target && e.target.id === 'login-btn') {
                 document.getElementById('modal-overlay').classList.remove('hidden');

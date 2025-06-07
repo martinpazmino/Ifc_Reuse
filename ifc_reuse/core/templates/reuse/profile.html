@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profil - IFC Reuse Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    {% load static %}
     <style>
         .dropdown-content {
             display: none;
@@ -28,7 +27,7 @@
     <!-- Header -->
     <header class="bg-gray-800 shadow-md py-4 px-6 flex justify-between items-center">
         <div class="flex items-center space-x-4">
-            <img src="{% static 'images/logo.jpg' %}" alt="Logo" class="h-20 mx-2">
+            <img src="{% static 'logo.jpg' %}" alt="Logo" class="h-20 mx-2" />
             <nav class="flex space-x-4 ml-4 text-lg">
                 <a href="{% url 'index' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Home</a>
                 <a href="{% url 'catalog' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Katalog</a>
@@ -59,17 +58,13 @@
     <!-- Main Content -->
     <main class="flex-grow container mx-auto px-6 py-12">
         <section class="text-center">
-            <h2 class="text-4xl font-bold text-[#F1FAEE] mb-6">Dein Profil</h2>
+            <h2 class="text-4xl font-bold mb-6">Dein Profil</h2>
         </section>
-
-        <!-- Profilbild und Kontodaten -->
-        <div class="bg-gray-800 rounded-xl p-6 shadow-md">
+        <div class="bg-gray-800 rounded-xl p-8 shadow-md max-w-4xl mx-auto">
             <div class="flex flex-col md:flex-row items-center md:items-start mb-8">
                 <div class="flex-shrink-0">
                     <img src="{{ user.profile.image.url }}" alt="Profilbild" class="w-32 h-32 rounded-full object-cover border-2 border-[#4CAF50]">
-
                     <form action="{% url 'upload_profile_image' %}" method="post" enctype="multipart/form-data">
-
                         {% csrf_token %}
                         <input type="file" name="profile_picture" accept="image/*" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#4CAF50] file:text-white hover:file:bg-[#45a049]">
                         <button type="submit" class="mt-2 bg-[#4CAF50] text-white py-2 px-4 rounded-lg">Hochladen</button>
@@ -82,18 +77,13 @@
                     <a href="{% url 'edit_profile' %}" class="mt-4 inline-block bg-[#4CAF50] text-white py-2 px-4 rounded-lg">Kontodaten bearbeiten</a>
                 </div>
             </div>
-
-            <!-- Tabs -->
             <div class="border-b border-gray-600 mb-6">
                 <nav class="flex space-x-4">
                     <button id="uploads-tab" class="py-2 px-4 text-[#F1FAEE] border-b-2 border-[#4CAF50]">Hochgeladene Inhalte</button>
                     <button id="saved-tab" class="py-2 px-4 text-gray-400">Gespeicherte Inhalte</button>
                 </nav>
             </div>
-
-            <!-- Hochgeladene Inhalte -->
             <div id="uploads-content">
-                <!-- Messages -->
                 {% if messages %}
                     <div class="mb-6">
                         {% for message in messages %}
@@ -101,13 +91,9 @@
                         {% endfor %}
                     </div>
                 {% endif %}
-
-                <!-- Error -->
                 {% if error %}
                     <p class="text-center text-red-400 mb-6">{{ error }}</p>
                 {% endif %}
-
-                <!-- Projects -->
                 {% if projects %}
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {% for project in projects %}
@@ -127,8 +113,6 @@
                     <p class="text-center text-gray-400">Keine Projekte verfügbar.</p>
                 {% endif %}
             </div>
-
-            <!-- Gespeicherte Inhalte -->
             <div id="saved-content" class="hidden">
                 {% if user_saved %}
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -161,11 +145,10 @@
         </div>
     </footer>
 
-    <!-- Modal (hidden by default) -->
+    <!-- Modal -->
     <div id="modal-overlay" class="fixed z-50 inset-0 flex items-center justify-center modal-bg hidden">
         <div class="bg-gray-800 rounded-xl p-8 w-full max-w-md relative border border-gray-600">
             <button id="close-modal" class="absolute top-3 right-3 text-gray-400 hover:text-gray-200 text-xl">×</button>
-            <!-- Login-Formular -->
             <form id="login-form" action="{% url 'login' %}" method="post">
                 {% csrf_token %}
                 <h2 class="text-2xl font-bold mb-4 text-center">Login</h2>
@@ -178,7 +161,6 @@
                     <button type="button" id="show-register" class="text-[#4CAF50] hover:underline">Noch keinen Account? Registrieren</button>
                 </div>
             </form>
-            <!-- Registrierungsformular -->
             <form id="register-form" action="{% url 'register' %}" method="post" class="hidden">
                 {% csrf_token %}
                 <h2 class="text-2xl font-bold mb-4 text-center">Registrieren</h2>
@@ -200,36 +182,11 @@
 
     <!-- JavaScript -->
     <script>
-        // Dropdown Logik
         window.toggleDropdown = function(event) {
             event.stopPropagation();
             const dropdown = event.currentTarget.closest('.dropdown');
             dropdown.classList.toggle('active');
         };
-
-        // Tab-Umschaltlogik
-        const uploadsTab = document.getElementById('uploads-tab');
-        const savedTab = document.getElementById('saved-tab');
-        const uploadsContent = document.getElementById('uploads-content');
-        const savedContent = document.getElementById('saved-content');
-
-        uploadsTab.addEventListener('click', () => {
-            uploadsTab.classList.add('text-[#F1FAEE]', 'border-b-2', 'border-[#4CAF50]');
-            savedTab.classList.remove('text-[#F1FAEE]', 'border-b-2', 'border-[#4CAF50]');
-            savedTab.classList.add('text-gray-400');
-            uploadsContent.classList.remove('hidden');
-            savedContent.classList.add('hidden');
-        });
-
-        savedTab.addEventListener('click', () => {
-            savedTab.classList.add('text-[#F1FAEE]', 'border-b-2', 'border-[#4CAF50]');
-            uploadsTab.classList.remove('text-[#F1FAEE]', 'border-b-2', 'border-[#4CAF50]');
-            uploadsTab.classList.add('text-gray-400');
-            savedContent.classList.remove('hidden');
-            uploadsContent.classList.add('hidden');
-        });
-
-        // Modal-Logik
         document.addEventListener('click', function(e) {
             if (e.target && e.target.id === 'login-btn') {
                 document.getElementById('modal-overlay').classList.remove('hidden');
@@ -250,6 +207,24 @@
             if (!e.target.closest('.dropdown')) {
                 document.querySelectorAll('.dropdown').forEach(drop => drop.classList.remove('active'));
             }
+        });
+        const uploadsTab = document.getElementById('uploads-tab');
+        const savedTab = document.getElementById('saved-tab');
+        const uploadsContent = document.getElementById('uploads-content');
+        const savedContent = document.getElementById('saved-content');
+        uploadsTab.addEventListener('click', () => {
+            uploadsTab.classList.add('text-[#F1FAEE]', 'border-b-2', 'border-[#4CAF50]');
+            savedTab.classList.remove('text-[#F1FAEE]', 'border-b-2', 'border-[#4CAF50]');
+            savedTab.classList.add('text-gray-400');
+            uploadsContent.classList.remove('hidden');
+            savedContent.classList.add('hidden');
+        });
+        savedTab.addEventListener('click', () => {
+            savedTab.classList.add('text-[#F1FAEE]', 'border-b-2', 'border-[#4CAF50]');
+            uploadsTab.classList.remove('text-[#F1FAEE]', 'border-b-2', 'border-[#4CAF50]');
+            uploadsTab.classList.add('text-gray-400');
+            savedContent.classList.remove('hidden');
+            uploadsContent.classList.add('hidden');
         });
     </script>
 </body>
