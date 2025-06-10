@@ -395,7 +395,9 @@ function setupSelection() {
                 let props = null;
                 console.log('🧪 Retrieving properties for expressID:', expressID);
                 try {
-                    await propertiesManager.init();
+                    if (propertiesManager && typeof propertiesManager.init === 'function') {
+                        await propertiesManager.init();
+                    }
                     props = await propertiesManager.getItemProperties(model, expressID);
                     if (!props) throw new Error('No properties returned');
                 } catch (err) {
