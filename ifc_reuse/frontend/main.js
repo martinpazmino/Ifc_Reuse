@@ -192,15 +192,15 @@ async function initializeIfcComponents() {
 async function loadIfc() {
     console.log('⏳ Loading IFC...');
     try {
-        const modelId = window.location.pathname.split('/').pop();
+        const modelId = window.location.pathname.split('/').filter(Boolean).pop();
         console.log('🧪 Fetching IFC file for model_id:', modelId);
 
-        const response = await fetch('/api/ifc-files/');
+        const response = await fetch('/list-ifcs/');
         if (!response.ok) throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
         const files = await response.json();
         console.log('🧪 API response:', files);
 
-        const file = files.find(f => f.url.includes(modelId));
+        const file = files.find(f => String(f.id) === String(modelId));
         if (!file) throw new Error(`No IFC file found for model_id: ${modelId}`);
         console.log('🧪 Found IFC file:', file.url);
 
