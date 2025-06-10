@@ -334,14 +334,20 @@ function setupSelection() {
             let selectedFragmentID = fragmentID;
             let group = fragments.groups.get(fragmentID);
             if (!group) {
-                console.warn('⚠️ Invalid fragmentID in selection:', fragmentID, 'Falling back to model UUID');
-                selectedFragmentID = modelGroupUUID;
-                group = fragments.groups.get(selectedFragmentID);
-                if (!group) {
-                    console.warn('⚠️ No fragment group found for model UUID:', selectedFragmentID);
-                    lastSelected = null;
-                    saveButton.style.display = 'none';
-                    return;
+                const fragment = fragments.list.get(fragmentID);
+                if (fragment && fragment.group) {
+                    group = fragment.group;
+                    selectedFragmentID = group.uuid;
+                } else {
+                    console.warn('⚠️ Invalid fragmentID in selection:', fragmentID, 'Falling back to model UUID');
+                    selectedFragmentID = modelGroupUUID;
+                    group = fragments.groups.get(selectedFragmentID);
+                    if (!group) {
+                        console.warn('⚠️ No fragment group found for model UUID:', selectedFragmentID);
+                        lastSelected = null;
+                        saveButton.style.display = 'none';
+                        return;
+                    }
                 }
             }
 
