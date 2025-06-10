@@ -92,6 +92,7 @@ def list_uploaded_ifcs(request):
     files = UploadedIFC.objects.all().order_by('-uploaded_at')
     data = [
         {
+            'id': file.id,
             'name': file.name,
             'url': file.file.url,
             'project_name': file.project_name,
@@ -190,4 +191,8 @@ def upload_ifc_file(request):
         location=location,
     )
 
-    return JsonResponse({'status': 'uploaded', 'file_url': instance.file.url})
+    return JsonResponse({
+        'status': 'uploaded',
+        'file_url': instance.file.url,
+        'id': instance.id,
+    })

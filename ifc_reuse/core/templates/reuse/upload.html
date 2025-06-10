@@ -175,9 +175,7 @@
                 const result = await response.json();
                 if (response.ok && result.status === 'uploaded') {
                     statusDiv.textContent = 'Upload successful! Redirecting to viewer...';
-                    const fileUrl = result.file_url;
-                    const fileId = result.file_url.split('/').pop();
-                    window.location.href = `/viewer/${fileId}/`;
+                    window.location.href = `/viewer/${result.id}/`;
                 } else {
                     statusDiv.textContent = `Error: ${result.error || 'Upload failed'}`;
                 }
