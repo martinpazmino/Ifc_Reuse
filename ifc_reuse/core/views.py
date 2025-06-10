@@ -6,7 +6,7 @@ from .models import ReusableComponent, UploadedIFC
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
-from .utils import get_type_and_material
+from .utils import get_element_info
 import json
 import os
 from django.contrib.auth.decorators import login_required
@@ -132,9 +132,15 @@ def upload_fragment(request):
         express_id = metadata.get("expressID")
         if ifc_filename and express_id is not None:
             ifc_path = os.path.join(settings.MEDIA_ROOT, "ifc_files", f"{ifc_filename}.ifc")
-            type_name, material = get_type_and_material(ifc_path, int(express_id))
-            metadata["Type"] = type_name
-            metadata["Material"] = material
+            info = get_element_info(ifc_path, int(express_id))
+            metadata["Type"] = info.get("type", "Unknown")
+            if "predefinedType" in info:
+                metadata["PredefinedType"] = info["predefinedType"]
+            if "material" in info:
+                metadata["Material"] = info["material"]
+            metadata["materials"] = info.get("materials", [])
+            if "storey" in info:
+                metadata["Storey"] = info["storey"]
 
             try:
                 upload = UploadedIFC.objects.get(file__contains=ifc_filename)
