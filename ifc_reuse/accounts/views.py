@@ -3,6 +3,8 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from .forms import UserRegistrationForm
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.db import IntegrityError
 
 def register(request):
     if request.method == 'POST':
