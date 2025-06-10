@@ -12,6 +12,8 @@ class ReusableComponent(models.Model):
 class UploadedIFC(models.Model):
     name = models.CharField(max_length=256)
     file = models.FileField(upload_to='ifc_files/')
+    project_name = models.CharField(max_length=256, blank=True)
+    location = models.CharField(max_length=256, blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
