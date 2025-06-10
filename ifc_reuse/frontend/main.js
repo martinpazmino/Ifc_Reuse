@@ -392,23 +392,47 @@ function setupSelection() {
             }
 
             try {
-                let props = null;
                 console.log('🧪 Retrieving properties for expressID:', expressID);
-                try {
-                    if (propertiesManager && typeof propertiesManager.init === 'function') {
-                        await propertiesManager.init();
+
+                let props = null;
+
+                const groupProps = group && typeof group.getLocalProperties === 'function'
+                    ? group.getLocalProperties()
+                    : null;
+
+                if (groupProps && groupProps[expressID]) {
+                    props = groupProps[expressID];
+                }
+
+                if (!props && propertiesManager && typeof propertiesManager.getItemProperties === 'function') {
+                    try {
+                        if (typeof propertiesManager.init === 'function') {
+                            await propertiesManager.init();
+                        }
+                        props = await propertiesManager.getItemProperties(model, expressID);
+                    } catch (err) {
+                        console.warn('⚠️ Failed to retrieve properties with propertiesManager:', err);
                     }
-                    props = await propertiesManager.getItemProperties(model, expressID);
-                    if (!props) throw new Error('No properties returned');
-                } catch (err) {
-                    console.warn('⚠️ Failed to retrieve properties with propertiesManager:', err);
+                }
+
+                if (!props) {
                     props = {
                         expressID,
                         fragmentID,
                         modelUUID: modelGroupUUID,
                     };
                 }
-                console.log('🧠 Properties:', props);
+
+                const metadata = {
+                    ...props,
+                    expressID,
+                    fragmentID,
+                    modelUUID: modelGroupUUID,
+                    type: props.type || props.Type || null,
+                    materials: props.materials || props.Materials || null,
+                };
+
+                console.log('🧠 Properties:', metadata);
 
                 let fragData = null;
                 if (typeof fragments.exportFragments === 'function') {
@@ -422,10 +446,10 @@ function setupSelection() {
                 const dirHandle = await window.showDirectoryPicker();
                 console.log('🗂️ Directory selected:', dirHandle.name);
 
-                const nameBase = props.GlobalId || `frag_${expressID}`;
+                const nameBase = metadata.GlobalId || `frag_${expressID}`;
                 const jsonFileHandle = await dirHandle.getFileHandle(`${nameBase}.json`, { create: true });
                 const jsonWritable = await jsonFileHandle.createWritable();
-                await jsonWritable.write(JSON.stringify(props, null, 2));
+                await jsonWritable.write(JSON.stringify(metadata, null, 2));
                 await jsonWritable.close();
                 console.log('✅ Metadata saved:', `${nameBase}.json`);
 
