@@ -5,6 +5,8 @@ from django.shortcuts import render, redirect
 from .models import ReusableComponent, UploadedIFC
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from django.conf import settings
+from .utils import get_type_and_material
 import json
 import os
 from django.contrib.auth.decorators import login_required
@@ -91,7 +93,9 @@ def list_uploaded_ifcs(request):
     data = [
         {
             'name': file.name,
-            'url': file.file.url
+            'url': file.file.url,
+            'project_name': file.project_name,
+            'location': file.location,
         }
         for file in files
     ]
@@ -116,8 +120,32 @@ def upload_fragment(request):
         frag_file = request.FILES.get("fragment")
         json_file = request.FILES.get("metadata")
         base_path = "reusable_components/"
-        frag_path = default_storage.save(os.path.join(base_path, frag_file.name), ContentFile(frag_file.read()))
-        json_path = default_storage.save(os.path.join(base_path, json_file.name), ContentFile(json_file.read()))
+        frag_path = default_storage.save(
+            os.path.join(base_path, frag_file.name),
+            ContentFile(frag_file.read())
+        )
+
+        metadata = json.loads(json_file.read().decode("utf-8"))
+
+        ifc_filename = metadata.get("modelUUID")
+        express_id = metadata.get("expressID")
+        if ifc_filename and express_id is not None:
+            ifc_path = os.path.join(settings.MEDIA_ROOT, "ifc_files", f"{ifc_filename}.ifc")
+            type_name, material = get_type_and_material(ifc_path, int(express_id))
+            metadata["Type"] = type_name
+            metadata["Material"] = material
+
+            try:
+                upload = UploadedIFC.objects.get(file__contains=ifc_filename)
+                metadata["Location"] = upload.location or metadata.get("Location", "Unknown")
+            except UploadedIFC.DoesNotExist:
+                pass
+
+        json_content = json.dumps(metadata, indent=2)
+        json_path = default_storage.save(
+            os.path.join(base_path, json_file.name),
+            ContentFile(json_content.encode("utf-8"))
+        )
         return JsonResponse({
             "status": "ok",
             "fragment_url": default_storage.url(frag_path),
@@ -151,5 +179,15 @@ def upload_ifc_file(request):
     file = request.FILES.get('file')
     if not file:
         return JsonResponse({'error': 'No file provided'}, status=400)
-    instance = UploadedIFC.objects.create(name=file.name, file=file)
+
+    project_name = request.POST.get('project_name', '')
+    location = request.POST.get('location', '')
+
+    instance = UploadedIFC.objects.create(
+        name=file.name,
+        file=file,
+        project_name=project_name,
+        location=location,
+    )
+
     return JsonResponse({'status': 'uploaded', 'file_url': instance.file.url})
