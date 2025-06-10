@@ -12,6 +12,7 @@ let highlighter = null;
 let outliner = null;
 let model = null;
 let modelGroupUUID = null;
+let currentModelId = null;
 let lastSelected = null;
 let saveButton = null;
 
@@ -194,6 +195,7 @@ async function loadIfc() {
     try {
         const modelId = window.location.pathname.split('/').filter(Boolean).pop();
         console.log('🧪 Fetching IFC file for model_id:', modelId);
+        currentModelId = modelId;
 
         const response = await fetch('/list-ifcs/');
         if (!response.ok) throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
@@ -433,6 +435,21 @@ function setupSelection() {
                 };
 
                 console.log('🧠 Properties:', metadata);
+
+                try {
+                    const resp = await fetch(`/get-element-info/?model_id=${encodeURIComponent(currentModelId)}&express_id=${expressID}`);
+                    if (resp.ok) {
+                        const info = await resp.json();
+                        metadata.type = info.type || metadata.type;
+                        if (info.predefinedType) metadata.PredefinedType = info.predefinedType;
+                        if (info.materials && info.materials.length) metadata.materials = info.materials;
+                        if (info.storey) metadata.storey = info.storey;
+                    } else {
+                        console.warn('⚠️ Failed to fetch element info:', resp.statusText);
+                    }
+                } catch (err) {
+                    console.warn('⚠️ Error fetching element info:', err);
+                }
 
                 let fragData = null;
                 if (typeof fragments.exportFragments === 'function') {

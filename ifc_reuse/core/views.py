@@ -115,6 +115,24 @@ def ifc_files_api(request):
     return JsonResponse(files, safe=False)
 
 
+@require_http_methods(["GET"])
+def get_element_info_view(request):
+    """Return metadata for a single IFC element."""
+    model_id = request.GET.get("model_id")
+    express_id = request.GET.get("express_id")
+    if not model_id or express_id is None:
+        return JsonResponse({"error": "model_id and express_id required"}, status=400)
+
+    try:
+        upload = UploadedIFC.objects.get(pk=model_id)
+    except UploadedIFC.DoesNotExist:
+        return JsonResponse({"error": "model not found"}, status=404)
+
+    ifc_path = upload.file.path
+    info = get_element_info(ifc_path, int(express_id))
+    return JsonResponse(info)
+
+
 @csrf_exempt
 def upload_fragment(request):
     if request.method == "POST" and request.FILES:
