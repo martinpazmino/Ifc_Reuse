@@ -463,7 +463,11 @@ function setupSelection() {
                 const dirHandle = await window.showDirectoryPicker();
                 console.log('🗂️ Directory selected:', dirHandle.name);
 
-                const nameBase = metadata.GlobalId || `frag_${expressID}`;
+                let globalId = metadata.GlobalId;
+                if (globalId && typeof globalId === 'object') {
+                    globalId = globalId.value || globalId.id || globalId.GlobalId || globalId.toString();
+                }
+                const nameBase = globalId || `frag_${expressID}`;
                 const jsonFileHandle = await dirHandle.getFileHandle(`${nameBase}.json`, { create: true });
                 const jsonWritable = await jsonFileHandle.createWritable();
                 await jsonWritable.write(JSON.stringify(metadata, null, 2));
