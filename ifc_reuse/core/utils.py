@@ -23,6 +23,11 @@ def get_element_info(ifc_path: str, express_id: int) -> Dict[str, object]:
     if predefined and predefined != "NOTDEFINED":
         info["predefinedType"] = str(predefined)
 
+    # PartitioningType if available (e.g. for IfcDoor, IfcWindow)
+    partitioning = getattr(element, "PartitioningType", None)
+    if partitioning and partitioning != "NOTDEFINED":
+        info["partitioningType"] = str(partitioning)
+
     # Associated materials and optional layer thickness
     materials: List[Dict[str, object]] = []
     try:
@@ -43,15 +48,23 @@ def get_element_info(ifc_path: str, express_id: int) -> Dict[str, object]:
                 if mat.is_a("IfcMaterialLayerSetUsage"):
                     for layer in mat.ForLayerSet.MaterialLayers:
                         add_material(layer.Material, getattr(layer, "LayerThickness", None))
+
                 elif mat.is_a("IfcMaterialLayerSet"):
                     for layer in mat.MaterialLayers:
                         add_material(layer.Material, getattr(layer, "LayerThickness", None))
+
+                elif mat.is_a("IfcMaterialList"):
+                    for mat_item in mat.Materials:
+                        add_material(mat_item)
+
                 elif mat.is_a("IfcMaterial"):
                     add_material(mat)
+
                 elif hasattr(mat, "Name"):
                     add_material(mat)
 
-                break
+                break  # Assume only one material relation per element
+
     except Exception:
         pass
 
@@ -72,4 +85,3 @@ def get_element_info(ifc_path: str, express_id: int) -> Dict[str, object]:
         pass
 
     return info
-
