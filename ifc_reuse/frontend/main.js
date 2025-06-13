@@ -263,7 +263,9 @@ function initializePropertiesUI() {
         } catch (err) {
             console.warn('⚠️ Error fetching element info:', err);
         }
-        allRows = Object.entries(props).map(([property, value]) => ({ property, value }));
+        allRows = Object.entries(props)
+            .filter(([, value]) => value !== undefined && value !== null)
+            .map(([property, value]) => ({ property, value }));
         propertiesTable.data = allRows;
     };
 
