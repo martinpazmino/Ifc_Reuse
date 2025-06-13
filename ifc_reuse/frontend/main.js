@@ -116,9 +116,9 @@ async function initializeScene() {
 }
 
 // Set up the UI with @thatopen/ui
-function initializeUI() {
+async function initializeUI() {
     try {
-        BUI.Manager.init();
+        await BUI.Manager.init();
         console.log('✅ BUI.Manager initialized');
 
         const panel = BUI.Component.create(() => {
@@ -658,7 +658,7 @@ async function main() {
         await initializeScene();
         console.log('✅ Scene initialization complete');
 
-        initializeUI();
+        await initializeUI();
         console.log('✅ UI initialization complete');
 
         await initializeIfcComponents();
