@@ -202,6 +202,8 @@ async function initializeClippingComponents() {
         raycaster = casterManager.get(world);
 
         clipper = components.get(Clipper);
+        clipper.enabled = true;
+
         clipEdges = components.get(ClipEdges);
         clipEdges.visible = true;
 
@@ -218,6 +220,15 @@ async function initializeClippingComponents() {
                 }
             });
         }
+
+        window.addEventListener('keydown', (event) => {
+            if (event.code === 'Delete' || event.code === 'Backspace') {
+                if (clipper.enabled) {
+                    clipper.deleteAll();
+                    clipEdges.update(true);
+                }
+            }
+        });
 
         console.log('✅ Clipping components initialized');
     } catch (err) {
@@ -253,6 +264,14 @@ async function loadIfc() {
         model.name = modelId;
         world.scene.three.add(model);
         console.log('✅ IFC model loaded:', model);
+
+        if (clipEdges && clipEdges.styles) {
+            const fill = new THREE.MeshBasicMaterial({ color: 'lightblue', side: 2 });
+            const line = new THREE.LineBasicMaterial({ color: 'blue' });
+            const outline = new THREE.MeshBasicMaterial({ color: 'blue', opacity: 0.5, side: 2, transparent: true });
+            clipEdges.styles.create('Default', new Set([model]), world, line, fill, outline);
+            clipEdges.update(true);
+        }
 
         modelGroupUUID = model.uuid;
         const group = fragments.groups.get(modelGroupUUID);
