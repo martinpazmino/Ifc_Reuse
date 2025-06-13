@@ -199,7 +199,20 @@ async function initializeIfcComponents() {
 // Initialize element properties table and panel
 function initializePropertiesUI() {
     if (!BUI.tables?.elementProperties) {
-        console.error('BUI.tables.elementProperties is not available');
+        console.warn('BUI.tables.elementProperties is not available. ' +
+            'Falling back to simple property display.');
+
+        propertiesPanel = BUI.Component.create(() => {
+            return BUI.html`
+            <bim-panel label="Properties">
+              <bim-panel-section label="Element Data">
+                <span style="color: var(--bim-ui_text-weak);">
+                  Properties table unavailable.
+                </span>
+              </bim-panel-section>
+            </bim-panel>
+            `;
+        });
         return;
     }
     [propertiesTable, updatePropertiesTable] = BUI.tables.elementProperties({
