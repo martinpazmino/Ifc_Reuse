@@ -198,43 +198,96 @@ async function initializeIfcComponents() {
 
 // Initialize element properties table and panel
 function initializePropertiesUI() {
-    if (!BUI.tables?.elementProperties) {
-        console.warn('BUI.tables.elementProperties is not available. ' +
-            'Falling back to simple property display.');
+    let allRows = [];
 
-        propertiesPanel = BUI.Component.create(() => {
-            return BUI.html`
-            <bim-panel label="Properties">
-              <bim-panel-section label="Element Data">
-                <span style="color: var(--bim-ui_text-weak);">
-                  Properties table unavailable.
-                </span>
-              </bim-panel-section>
-            </bim-panel>
-            `;
-        });
-        return;
-    }
-    [propertiesTable, updatePropertiesTable] = BUI.tables.elementProperties({
-        components,
-        fragmentIdMap: {},
-    });
-    propertiesTable.preserveStructureOnFilter = true;
-    propertiesTable.indentationInText = false;
+    propertiesTable = document.createElement('bim-table');
+    propertiesTable.columns = [
+        { key: 'property', label: 'Property' },
+        { key: 'value', label: 'Value' },
+    ];
+    propertiesTable.data = [];
+    propertiesTable.expanded = true;
+
+    updatePropertiesTable = async ({ fragmentIdMap }) => {
+        allRows = [];
+        propertiesTable.data = [];
+        if (!fragmentIdMap) return;
+        const entries = Object.entries(fragmentIdMap);
+        if (!entries.length) return;
+        let [fragmentID, expressSet] = entries[0];
+        const expressIDs = Array.from(expressSet);
+        if (!expressIDs.length) return;
+        const expressID = expressIDs[0];
+
+        let group = fragments.groups.get(fragmentID);
+        if (!group) {
+            const frag = fragments.list.get(fragmentID);
+            if (frag && frag.group) {
+                group = frag.group;
+                fragmentID = group.uuid;
+            } else {
+                fragmentID = modelGroupUUID;
+                group = fragments.groups.get(fragmentID);
+            }
+        }
+
+        let props = null;
+        const groupProps = group && typeof group.getLocalProperties === 'function'
+            ? group.getLocalProperties()
+            : null;
+        if (groupProps && groupProps[expressID]) {
+            props = groupProps[expressID];
+        }
+        if (!props && propertiesManager && typeof propertiesManager.getItemProperties === 'function') {
+            try {
+                if (typeof propertiesManager.init === 'function') {
+                    await propertiesManager.init();
+                }
+                props = await propertiesManager.getItemProperties(model, expressID);
+            } catch (err) {
+                console.warn('⚠️ Failed to retrieve properties with propertiesManager:', err);
+            }
+        }
+        if (!props) {
+            props = { expressID };
+        }
+        try {
+            const resp = await fetch(`/get-element-info/?model_id=${encodeURIComponent(currentModelId)}&express_id=${expressID}`);
+            if (resp.ok) {
+                const info = await resp.json();
+                if (info.type) props.type = info.type;
+                if (info.predefinedType) props.PredefinedType = info.predefinedType;
+                if (info.materials && info.materials.length) props.materials = info.materials;
+                if (info.storey) props.storey = info.storey;
+            }
+        } catch (err) {
+            console.warn('⚠️ Error fetching element info:', err);
+        }
+        allRows = Object.entries(props).map(([property, value]) => ({ property, value }));
+        propertiesTable.data = allRows;
+    };
 
     if (highlighter) {
         highlighter.events.select.onHighlight.add((fragmentIdMap) => {
             updatePropertiesTable({ fragmentIdMap });
         });
-        highlighter.events.select.onClear.add(() =>
-            updatePropertiesTable({ fragmentIdMap: {} })
-        );
+        highlighter.events.select.onClear.add(() => {
+            updatePropertiesTable({ fragmentIdMap: {} });
+        });
     }
 
     propertiesPanel = BUI.Component.create(() => {
         const onTextInput = (e) => {
             const input = e.target;
-            propertiesTable.queryString = input.value !== '' ? input.value : null;
+            const query = input.value.trim().toLowerCase();
+            if (query === '') {
+                propertiesTable.data = allRows;
+                return;
+            }
+            propertiesTable.data = allRows.filter((r) =>
+                String(r.property).toLowerCase().includes(query) ||
+                String(r.value).toLowerCase().includes(query)
+            );
         };
 
         const expandTable = (e) => {
@@ -244,7 +297,9 @@ function initializePropertiesUI() {
         };
 
         const copyAsTSV = async () => {
-            await navigator.clipboard.writeText(propertiesTable.tsv);
+            const lines = allRows.map((r) => `${r.property}\t${r.value}`);
+            const tsv = `Property\tValue\n${lines.join('\n')}`;
+            await navigator.clipboard.writeText(tsv);
         };
 
         return BUI.html`
