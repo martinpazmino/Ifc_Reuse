@@ -238,17 +238,26 @@ async function initializeClippingComponents() {
 }
 
 // Create clipping styles for a given model
-function setupClipStyles(mesh) {
+function setupClipStyles(group) {
     if (!clipEdges || !clipEdges.styles) return;
+
     const fill = new THREE.MeshBasicMaterial({ color: 'lightblue', side: 2 });
     const line = new THREE.LineBasicMaterial({ color: 'blue' });
     const outline = new THREE.MeshBasicMaterial({ color: 'blue', opacity: 0.5, side: 2, transparent: true });
-    const meshes = new Set([mesh]);
+
+    const meshes = new Set();
+    group.traverse((child) => {
+        if (child.isMesh) {
+            meshes.add(child);
+        }
+    });
+
     if (!clipEdges.styles.list['Default']) {
         clipEdges.styles.create('Default', meshes, world, line, fill, outline);
     } else {
         clipEdges.styles.list['Default'].meshes = meshes;
     }
+
     clipEdges.update(true);
 }
 
