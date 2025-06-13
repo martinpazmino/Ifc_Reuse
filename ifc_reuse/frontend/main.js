@@ -204,7 +204,7 @@ async function initializeClippingComponents() {
 
         clipper = components.get(Clipper);
         clipper.enabled = true;
-        clipper.visible = true; // show plane helpers
+        clipper.visible = true; // show plane helper
         clipEdges = components.get(ClipEdges);
         clipEdges.visible = true;
         clipper.Type = EdgesPlane;
@@ -251,6 +251,7 @@ function setupClipStyles(group) {
     } else {
         clipEdges.styles.list['Default'].meshes = meshes;
     }
+
 
 }
 
