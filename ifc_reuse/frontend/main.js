@@ -17,6 +17,7 @@ let lastSelected = null;
 let saveButton = null;
 let raycaster = null;
 let clipper = null;
+let container = null;
 let clipEdges = null;
 
 // Wait for DOM to be ready
@@ -37,7 +38,7 @@ async function initializeScene() {
     await waitForDOM();
     console.log('✅ DOM is ready');
 
-    const container = document.getElementById('container');
+    container = document.getElementById('container');
     if (!container) {
         console.warn('❌ No container found with ID "container" — Retrying in 100ms');
         setTimeout(initializeScene, 100); // try again
@@ -196,37 +197,30 @@ async function initializeIfcComponents() {
 async function initializeClippingComponents() {
     try {
         const { Raycasters, Clipper } = await import('@thatopen/components');
-        const { ClipEdges } = await import('@thatopen/components-front');
+        const { ClipEdges, EdgesPlane } = await import('@thatopen/components-front');
 
         const casterManager = components.get(Raycasters);
         raycaster = casterManager.get(world);
 
         clipper = components.get(Clipper);
         clipper.enabled = true;
-        clipper.visible = true; // show plane helpers
-
+        clipper.visible = true; // show plane helper
         clipEdges = components.get(ClipEdges);
         clipEdges.visible = true;
+        clipper.Type = EdgesPlane;
 
-        if (world?.renderer?.three?.domElement) {
-            world.renderer.three.domElement.addEventListener('dblclick', () => {
-                try {
-                    const intersect = raycaster.castRay();
-                    if (intersect) {
-                        clipper.createPlaneFromIntersection(world, intersect);
-                        clipEdges.update(true);
-                    }
-                } catch (err) {
-                    console.error('❌ Clipping error:', err);
+        if (container) {
+            container.ondblclick = () => {
+                if (clipper.enabled) {
+                    clipper.create(world);
                 }
-            });
+            };
         }
 
         window.addEventListener('keydown', (event) => {
             if (event.code === 'Delete' || event.code === 'Backspace') {
                 if (clipper.enabled) {
-                    clipper.deleteAll();
-                    clipEdges.update(true);
+                    clipper.delete(world);
                 }
             }
         });
@@ -258,7 +252,7 @@ function setupClipStyles(group) {
         clipEdges.styles.list['Default'].meshes = meshes;
     }
 
-    clipEdges.update(true);
+
 }
 
 // Load IFC model
