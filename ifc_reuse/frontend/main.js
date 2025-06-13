@@ -198,6 +198,10 @@ async function initializeIfcComponents() {
 
 // Initialize element properties table and panel
 function initializePropertiesUI() {
+    if (!BUI.tables?.elementProperties) {
+        console.error('BUI.tables.elementProperties is not available');
+        return;
+    }
     [propertiesTable, updatePropertiesTable] = BUI.tables.elementProperties({
         components,
         fragmentIdMap: {},
