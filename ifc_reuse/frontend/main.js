@@ -15,6 +15,9 @@ let modelGroupUUID = null;
 let currentModelId = null;
 let lastSelected = null;
 let saveButton = null;
+let raycaster = null;
+let clipper = null;
+let clipEdges = null;
 
 // Wait for DOM to be ready
 function waitForDOM() {
@@ -186,6 +189,39 @@ async function initializeIfcComponents() {
     } catch (err) {
         console.error('❌ Error initializing IFC components:', err);
         throw err;
+    }
+}
+
+// Initialize clipping components
+async function initializeClippingComponents() {
+    try {
+        const { Raycasters, Clipper } = await import('@thatopen/components');
+        const { ClipEdges } = await import('@thatopen/components-front');
+
+        const casterManager = components.get(Raycasters);
+        raycaster = casterManager.get(world);
+
+        clipper = components.get(Clipper);
+        clipEdges = components.get(ClipEdges);
+        clipEdges.visible = true;
+
+        if (world?.renderer?.three?.domElement) {
+            world.renderer.three.domElement.addEventListener('dblclick', () => {
+                try {
+                    const intersect = raycaster.castRay();
+                    if (intersect) {
+                        clipper.createPlaneFromIntersection(world, intersect);
+                        clipEdges.update(true);
+                    }
+                } catch (err) {
+                    console.error('❌ Clipping error:', err);
+                }
+            });
+        }
+
+        console.log('✅ Clipping components initialized');
+    } catch (err) {
+        console.error('❌ Error initializing clipping components:', err);
     }
 }
 
@@ -509,6 +545,9 @@ async function main() {
 
         await initializeIfcComponents();
         console.log('✅ IFC components initialization complete');
+
+        await initializeClippingComponents();
+        console.log('✅ Clipping components initialization complete');
 
         setupSelection();
         console.log('✅ Selection setup complete');
