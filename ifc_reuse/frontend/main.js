@@ -19,6 +19,9 @@ let raycaster = null;
 let clipper = null;
 let container = null;
 let clipEdges = null;
+let propertiesTable = null;
+let updatePropertiesTable = null;
+let propertiesPanel = null;
 
 // Wait for DOM to be ready
 function waitForDOM() {
@@ -191,6 +194,70 @@ async function initializeIfcComponents() {
         console.error('❌ Error initializing IFC components:', err);
         throw err;
     }
+}
+
+// Initialize element properties table and panel
+function initializePropertiesUI() {
+    [propertiesTable, updatePropertiesTable] = BUI.tables.elementProperties({
+        components,
+        fragmentIdMap: {},
+    });
+    propertiesTable.preserveStructureOnFilter = true;
+    propertiesTable.indentationInText = false;
+
+    if (highlighter) {
+        highlighter.events.select.onHighlight.add((fragmentIdMap) => {
+            updatePropertiesTable({ fragmentIdMap });
+        });
+        highlighter.events.select.onClear.add(() =>
+            updatePropertiesTable({ fragmentIdMap: {} })
+        );
+    }
+
+    propertiesPanel = BUI.Component.create(() => {
+        const onTextInput = (e) => {
+            const input = e.target;
+            propertiesTable.queryString = input.value !== '' ? input.value : null;
+        };
+
+        const expandTable = (e) => {
+            const button = e.target;
+            propertiesTable.expanded = !propertiesTable.expanded;
+            button.label = propertiesTable.expanded ? 'Collapse' : 'Expand';
+        };
+
+        const copyAsTSV = async () => {
+            await navigator.clipboard.writeText(propertiesTable.tsv);
+        };
+
+        return BUI.html`
+            <bim-panel label="Properties">
+              <bim-panel-section label="Element Data">
+                <div style="display: flex; gap: 0.5rem;">
+                  <bim-button @click=${expandTable} label=${propertiesTable.expanded ? 'Collapse' : 'Expand'}></bim-button>
+                  <bim-button @click=${copyAsTSV} label="Copy as TSV"></bim-button>
+                </div>
+                <bim-text-input @input=${onTextInput} placeholder="Search Property" debounce="250"></bim-text-input>
+                ${propertiesTable}
+              </bim-panel-section>
+            </bim-panel>
+        `;
+    });
+}
+
+function setupLayout() {
+    const viewport = container;
+    const app = document.createElement('bim-grid');
+    app.layouts = {
+        main: {
+            template: `\n            "propertiesPanel viewport"\n            /25rem 1fr\n            `,
+            elements: { propertiesPanel, viewport },
+        },
+    };
+    app.layout = 'main';
+    const parent = container?.parentElement || document.body;
+    parent.innerHTML = '';
+    parent.appendChild(app);
 }
 
 // Initialize clipping components
@@ -579,6 +646,9 @@ async function main() {
 
         await initializeIfcComponents();
         console.log('✅ IFC components initialization complete');
+
+        initializePropertiesUI();
+        setupLayout();
 
         await initializeClippingComponents();
         console.log('✅ Clipping components initialization complete');
