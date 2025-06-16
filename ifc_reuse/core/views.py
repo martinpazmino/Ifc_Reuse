@@ -146,11 +146,6 @@ def account_settings(request):
     return render(request, 'reuse/settings.html')
 
 
-@login_required
-def select(request, model_id):
-    return render(request, 'reuse/select.html', {'model_id': model_id})
-
-
 def list_uploaded_ifcs(request):
     files = UploadedIFC.objects.all().order_by('-uploaded_at')
     data = [

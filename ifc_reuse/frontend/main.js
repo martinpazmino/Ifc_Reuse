@@ -24,17 +24,6 @@ let updatePropertiesTable = null;
 let propertiesPanel = null;
 
 
-function getCSRFToken() {
-    const name = 'csrftoken';
-    const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
-        cookie = cookie.trim();
-        if (cookie.startsWith(name + '=')) {
-            return decodeURIComponent(cookie.substring(name.length + 1));
-        }
-    }
-    return '';
-}
 
 
 // Wait for DOM to be ready
@@ -702,16 +691,29 @@ function setupSelection() {
                 const jsonFilePath = `reusable_components/${nameBase}.json`;
                 console.log('📤 Sending json_file_path to backend:', jsonFilePath);
 
+                function getCSRFToken() {
+                    const name = 'csrftoken';
+                    const cookies = document.cookie.split(';');
+                    for (let cookie of cookies) {
+                        cookie = cookie.trim();
+                        if (cookie.startsWith(name + '=')) {
+                            return decodeURIComponent(cookie.substring(name.length + 1));
+                        }
+                    }
+                    return '';
+                }
+
                 const csrfToken = getCSRFToken();
 
                 const resp = await fetch('/mark-component/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken,
+                        'X-CSRFToken': csrfToken, // ✅ Required for Django
                     },
-                    body: JSON.stringify({ json_file_path: jsonFilePath }),
+                    body: JSON.stringify(metadata),
                 });
+
 
 
 
