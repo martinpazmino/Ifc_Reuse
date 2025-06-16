@@ -1,3 +1,4 @@
+// Core Three.js import (needed immediately)
 import * as THREE from 'three';
 import * as BUI from '@thatopen/ui';
 
@@ -182,7 +183,7 @@ async function initializeIfcComponents() {
 
         outliner = components.get(Outliner);
         outliner.world = world;
-        outliner.enabled = true
+        outliner.enabled = true;
         outliner.create('highlight', new THREE.MeshBasicMaterial({
             color: 0xf1c40f,
             transparent: true,
@@ -251,11 +252,11 @@ function initializePropertiesUI() {
             props = { expressID };
         }
         try {
-            const resp = await fetch(`/get-element-info/?model_id=${encodeURIComponent(currentModelId)}&express_id=${encodeURIComponent(expressID)}`);
+            const resp = await fetch(`/get-element-info/?model_id=${encodeURIComponent(currentModelId)}&express_id=${expressID}`);
             if (resp.ok) {
                 const info = await resp.json();
                 if (info.type) props.type = info.type;
-                if (info.predefinedType) props.predefinedType = info.predefinedType;
+                if (info.predefinedType) props.PredefinedType = info.predefinedType;
                 if (info.materials && info.materials.length) props.materials = info.materials;
                 if (info.storey) props.storey = info.storey;
             }
@@ -391,6 +392,8 @@ function setupClipStyles(group) {
     } else {
         clipEdges.styles.list['Default'].meshes = meshes;
     }
+
+
 }
 
 // Load IFC model
@@ -503,10 +506,6 @@ function disposeFragments() {
 // Set up selection and highlighting
 function setupSelection() {
     try {
-        if (!highlighter || !fragments || !outliner) {
-            throw new Error('Required components (highlighter, fragments, or outliner) not initialized');
-        }
-
         saveButton = document.createElement('button');
         saveButton.textContent = '✅ Select as Reusable';
         saveButton.style.position = 'absolute';
@@ -539,7 +538,7 @@ function setupSelection() {
             const expressIDs = Array.from(expressSet);
 
             if (!expressIDs.length) {
-                console.warn('⚠️ No expressIDs found in fragment ID:', fragmentID);
+                console.warn('⚠️ No expressIDs found in fragment');
                 lastSelected = null;
                 saveButton.style.display = 'none';
                 return;
@@ -581,17 +580,15 @@ function setupSelection() {
         });
 
         saveButton.onclick = async () => {
-            console.log('🟢 Button clicked');
+            console.log('🟩 Button clicked');
             if (!lastSelected) {
                 console.warn('⚠️ No selection found');
-                alert('❌ No component selected');
                 return;
             }
 
             const { id: expressID, fragments: fragmentList } = lastSelected;
             if (!expressID || !fragmentList?.length) {
                 console.warn('⚠️ Invalid selection');
-                alert('❌ Invalid selection');
                 return;
             }
 
@@ -603,14 +600,15 @@ function setupSelection() {
                 group = fragments.groups.get(fragmentID);
                 if (!group) {
                     console.warn('⚠️ No fragment group found for model UUID:', fragmentID);
-                    alert('❌ No valid component');
                     return;
                 }
             }
 
             try {
-                console.log('🟢 Retrieving properties for expressID:', expressID);
+                console.log('🧪 Retrieving properties for expressID:', expressID);
+
                 let props = null;
+
                 const groupProps = group && typeof group.getLocalProperties === 'function'
                     ? group.getLocalProperties()
                     : null;
@@ -632,94 +630,90 @@ function setupSelection() {
 
                 if (!props) {
                     props = {
-                        express_id: expressID,
-                        fragment_id: fragmentID,
-                        model_uuid: modelGroupUUID,
+                        expressID,
+                        fragmentID,
+                        modelUUID: modelGroupUUID,
                     };
                 }
 
                 const metadata = {
                     ...props,
-                    express_id: expressID,
-                    fragment_id: fragmentID,
-                    model_id: currentModelId,
-                    model_uuid: modelGroupUUID,
+                    expressID,
+                    fragmentID,
+                    modelUUID: modelGroupUUID,
                     type: props.type || props.Type || null,
-                    materials: props.materials || null,
+                    materials: props.materials || props.Materials || null,
                 };
 
-                console.log('🧪 Metadata before fetch:', metadata);
+                console.log('🧠 Properties:', metadata);
 
-                // Fetch additional info from /get-element-info/
                 try {
-                    const resp = await fetch(`/get-element-info/?model_id=${encodeURIComponent(currentModelId)}&express_id=${encodeURIComponent(expressID)}`);
+                    const resp = await fetch(`/get-element-info/?model_id=${encodeURIComponent(currentModelId)}&express_id=${expressID}`);
                     if (resp.ok) {
                         const info = await resp.json();
                         metadata.type = info.type || metadata.type;
-                        metadata.predefinedType = info.predefinedType || metadata.predefinedType;
-                        metadata.materials = info.materials || metadata.materials;
-                        metadata.storey = info.storey || metadata.storey;
+                        if (info.predefinedType) metadata.PredefinedType = info.predefinedType;
+                        if (info.materials && info.materials.length) metadata.materials = info.materials;
+                        if (info.storey) metadata.storey = info.storey;
                     } else {
                         console.warn('⚠️ Failed to fetch element info:', resp.statusText);
                     }
                 } catch (err) {
-                    console.error('❌ Error fetching element info:', err);
+                    console.warn('⚠️ Error fetching element info:', err);
                 }
 
-                console.log('✅ Final metadata:', metadata);
-
-                // Send metadata to /save-reusable/
-                const response = await fetch('/save-reusable/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(metadata),
-                    credentials: 'include', // Include if authentication is needed
-                });
-
-                console.log('🟢 Response status:', response.status, response.statusText);
-
-                let responseBody;
-                try {
-                    responseBody = await response.json();
-                } catch (err) {
-                    console.error('❌ Failed to parse response as JSON:', err);
-                    responseBody = { status: 'error', message: 'Invalid response format' };
-                }
-
-                if (!response.ok) {
-                    console.error('❌ Server error response:', responseBody);
-                    throw new Error(responseBody.message || `Server error: ${response.status} ${response.statusText}`);
-                }
-
-                if (responseBody.status === 'ok') {
-                    console.log('✅ Component saved successfully:', responseBody);
-                    alert('✅ Component saved successfully!');
-                    saveButton.style.display = 'none';
+                let fragData = null;
+                if (typeof fragments.exportFragments === 'function') {
+                    console.log('🧪 Exporting fragment data for group:', fragmentID);
+                    fragData = fragments.exportFragments(group);
+                    if (!fragData) console.warn('⚠️ Failed to export fragment data for fragmentID:', fragmentID);
                 } else {
-                    throw new Error(responseBody.message || 'Failed to save component');
+                    console.warn('⚠️ fragments.exportFragments is not available. Skipping geometry export.');
                 }
-            } catch (error) {
-                console.error('❌ Save error:', error);
-                alert(`❌ Failed to save component: ${error.message}`);
+
+                const dirHandle = await window.showDirectoryPicker();
+                console.log('🗂️ Directory selected:', dirHandle.name);
+
+                let globalId = metadata.GlobalId;
+                if (globalId && typeof globalId === 'object') {
+                    globalId = globalId.value || globalId.id || globalId.GlobalId || globalId.toString();
+                }
+                const nameBase = globalId || `frag_${expressID}`;
+                const jsonFileHandle = await dirHandle.getFileHandle(`${nameBase}.json`, { create: true });
+                const jsonWritable = await jsonFileHandle.createWritable();
+                await jsonWritable.write(JSON.stringify(metadata, null, 2));
+                await jsonWritable.close();
+                console.log('✅ Metadata saved:', `${nameBase}.json`);
+
+                if (fragData) {
+                    const fragFileHandle = await dirHandle.getFileHandle(`${nameBase}.frag`, { create: true });
+                    const fragWritable = await fragFileHandle.createWritable();
+                    await fragWritable.write(fragData);
+                    await fragWritable.close();
+                    console.log('✅ Fragment data saved:', `${nameBase}.frag`);
+                }
+
+                alert('✅ Component saved locally!');
+                saveButton.style.display = 'none';
+            } catch (err) {
+                console.error('❌ Save error:', err);
+                alert('❌ Failed to save component: ' + err.message);
             }
         };
 
         console.log('✅ Selection setup complete');
     } catch (err) {
         console.error('❌ Error setting up selection:', err);
-        throw err;
     }
 }
 
-// Main function initialization
+// Main initialization function
 async function main() {
     try {
         console.log('🚀 Starting application initialization...');
 
         await initializeScene();
-        console.log('✅ Scene complete');
+        console.log('✅ Scene initialization complete');
 
         await initializeUI();
         console.log('✅ UI initialization complete');
@@ -728,16 +722,13 @@ async function main() {
         console.log('✅ IFC components initialization complete');
 
         initializePropertiesUI();
-        console.log('✅ Properties UI initialization complete');
-
         setupLayout();
-        console.log('✅ Layout setup complete');
 
         await initializeClippingComponents();
         console.log('✅ Clipping components initialization complete');
 
         setupSelection();
-        console.log('✅ Selection complete');
+        console.log('✅ Selection setup complete');
 
         await loadIfc();
         console.log('✅ IFC loading complete');
@@ -766,7 +757,7 @@ async function main() {
     }
 }
 
-// Start application when DOM is ready
+// Start the application when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', main);
 } else {

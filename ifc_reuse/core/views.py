@@ -307,55 +307,7 @@ def reusable_components(request):
     )
     return JsonResponse(list(components), safe=False)
 
-def save_reusable_component(request):
-    if request.method != 'POST':
-        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
 
-    try:
-        # Parse JSON payload
-        data = json.loads(request.body)
-        model_id = data.get('model_id')
-        express_id = data.get('express_id')
-        metadata = data
-
-        # Validate required fields
-        if not model_id or not express_id:
-            return JsonResponse(
-                {'status': 'error', 'message': 'Missing model_id or express_id'},
-                status=400
-            )
-
-        # Get the UploadedIFC instance
-        try:
-            ifc_file = UploadedIFC.objects.get(id=model_id)
-        except UploadedIFC.DoesNotExist:
-            return JsonResponse(
-                {'status': 'error', 'message': 'IFC file not found'},
-                status=404
-            )
-
-        # Extract fields for ReusableComponent
-        component_type = metadata.get('predefinedType') or metadata.get('type') or 'Unknown'
-        storey = metadata.get('storey')
-        material_name = None
-        if metadata.get('materials') and len(metadata['materials']):
-            material_name = metadata['materials'][0].get('name')
-
-        # Save to ReusableComponent
-        component = ReusableComponent.objects.create(
-            ifc_file=ifc_file,
-            component_type=component_type,
-            storey=storey,
-            material_name=material_name,
-            json_file_path=json.dumps(metadata, indent=2)
-        )
-
-        return JsonResponse({'status': 'ok', 'message': 'Component saved successfully', 'id': component.id})
-
-    except json.JSONDecodeError:
-        return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 @require_http_methods(["POST"])
 def upload_ifc_file(request):
     file = request.FILES.get('file')

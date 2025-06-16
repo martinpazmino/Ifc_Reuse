@@ -20,5 +20,4 @@ urlpatterns = [
     path('api/catalog/', views.catalog_api, name='catalog_api'),
     path('get-element-info/', views.get_element_info_view, name='get_element_info'),
     path('upload-ifc/', views.upload_ifc_file, name='upload_ifc'),
-    path('save-reusable-component/', views.save_reusable_component, name='save_reusable_component'),
 ]
