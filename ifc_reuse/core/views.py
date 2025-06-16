@@ -256,42 +256,52 @@ def upload_fragment(request):
     return JsonResponse({"status": "error", "message": "Invalid request"}, status=400)
 
 
+@require_http_methods(["POST"])
 def mark_component(request):
-    if request.method == "POST":
-        data = json.loads(request.body)
-        json_file_path = data.get("json_file_path")
-        if not json_file_path:
-            return JsonResponse({"error": "json_file_path required"}, status=400)
+    """Create a :class:`ReusableComponent` from an uploaded fragment.
 
-        full_json_path = os.path.join(settings.MEDIA_ROOT, json_file_path)
-        try:
-            with open(full_json_path, "r", encoding="utf-8") as f:
-                metadata = json.load(f)
-        except FileNotFoundError:
-            return JsonResponse({"error": "metadata file not found"}, status=404)
+    This view is intended to be called via ``POST`` with a JSON body
+    containing a ``json_file_path`` key.  Previously a ``GET`` request would
+    reach this view and Django would raise a ``ValueError`` because no
+    ``HttpResponse`` was returned.  The ``@require_http_methods`` decorator
+    now ensures a proper ``405 Method Not Allowed`` response is returned for
+    other HTTP methods.
+    """
 
-        express_id = metadata.get("expressID")
-        model_uuid = metadata.get("modelUUID")
-        if express_id is None or not model_uuid:
-            return JsonResponse({"error": "invalid metadata"}, status=400)
+    data = json.loads(request.body)
+    json_file_path = data.get("json_file_path")
+    if not json_file_path:
+        return JsonResponse({"error": "json_file_path required"}, status=400)
 
-        ifc_path = os.path.join(settings.MEDIA_ROOT, "ifc_files", f"{model_uuid}.ifc")
-        info = get_element_info(ifc_path, int(express_id))
+    full_json_path = os.path.join(settings.MEDIA_ROOT, json_file_path)
+    try:
+        with open(full_json_path, "r", encoding="utf-8") as f:
+            metadata = json.load(f)
+    except FileNotFoundError:
+        return JsonResponse({"error": "metadata file not found"}, status=404)
 
-        try:
-            upload = UploadedIFC.objects.get(file__contains=model_uuid)
-        except UploadedIFC.DoesNotExist:
-            upload = None
+    express_id = metadata.get("expressID")
+    model_uuid = metadata.get("modelUUID")
+    if express_id is None or not model_uuid:
+        return JsonResponse({"error": "invalid metadata"}, status=400)
 
-        component = ReusableComponent.objects.create(
-            ifc_file=upload,
-            component_type=info.get("type", "Unknown"),
-            storey=info.get("storey"),
-            material_name=info.get("material"),
-            json_file_path=json_file_path,
-        )
+    ifc_path = os.path.join(settings.MEDIA_ROOT, "ifc_files", f"{model_uuid}.ifc")
+    info = get_element_info(ifc_path, int(express_id))
 
-        return JsonResponse({"status": "ok", "component_id": component.id})
+    try:
+        upload = UploadedIFC.objects.get(file__contains=model_uuid)
+    except UploadedIFC.DoesNotExist:
+        upload = None
+
+    component = ReusableComponent.objects.create(
+        ifc_file=upload,
+        component_type=info.get("type", "Unknown"),
+        storey=info.get("storey"),
+        material_name=info.get("material"),
+        json_file_path=json_file_path,
+    )
+
+    return JsonResponse({"status": "ok", "component_id": component.id})
 
 
 def reusable_components(request):
