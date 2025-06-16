@@ -5,13 +5,12 @@ app_name = 'core'
 
 urlpatterns = [
     path('', views.index, name='index'),
-    path('catalog/', views.catalog, name='catalog'),
-    path('categories/', views.categories, name='categories'),
+
+    path('catalog/', views.categories, name='catalog'),
     path('upload/', views.upload_page, name='upload_page'),
-    path('api/', views.api_view, name='api'),
     path('viewer/<int:model_id>/', views.viewer_page, name='viewer_page'),
     path('about/', views.about, name='about'),
-    path('settings/', views.settings, name='settings'),
+    path('settings/', views.account_settings, name='settings'),
     path('select/<int:model_id>/', views.select, name='select'),
     path('list-ifcs/', views.list_uploaded_ifcs, name='list_ifcs'),
     path('ifc-files/', views.ifc_files_api, name='ifc_files_api'),

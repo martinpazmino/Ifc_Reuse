@@ -49,7 +49,7 @@ def categories(request):
             info = {"name": name or "Unnamed", "global_id": gid or ""}
             categories.setdefault(cat, []).append(info)
 
-    return render(request, "reuse/categories.html", {"categories": categories})
+    return render(request, "reuse/catalog.html", {"categories": categories})
 
 
 def catalog_api(request):
@@ -95,10 +95,6 @@ def upload_page(request):
     return render(request, 'reuse/upload.html')
 
 
-def api_view(request):
-    return render(request, 'reuse/api.html')
-
-
 def viewer_page(request, model_id):
     return render(request, 'reuse/viewer.html', {'model_id': model_id})
 
@@ -108,7 +104,7 @@ def about(request):
 
 
 @login_required
-def settings(request):
+def account_settings(request):
     if request.method == 'POST':
         form_type = request.POST.get('form_type')
 
