@@ -692,16 +692,16 @@ function setupSelection() {
                 console.log('📤 Sending json_file_path to backend:', jsonFilePath);
 
                 try {
-                    const response = await fetch('/save-component-metadata/', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ metadata, filename: `${nameBase}.json` })
-                    });
+
+                    const url = `/get-element-info/?model_id=${encodeURIComponent(currentModelId)}&express_id=${expressID}` +
+                        `&filename=${encodeURIComponent(`${nameBase}.json`)}&model_uuid=${encodeURIComponent(modelGroupUUID)}` +
+                        `&metadata=${encodeURIComponent(JSON.stringify(metadata))}`;
+                    const response = await fetch(url);
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}`);
                     }
-                    const data = await response.json();
-                    console.log('✅ Metadata stored on server:', data.path);
+                    console.log('✅ Metadata stored on server');
+
                 } catch (err) {
                     console.error('❌ Failed to upload component:', err);
                 }

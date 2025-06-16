@@ -177,6 +177,9 @@ def get_element_info_view(request):
     """Return metadata for a single IFC element."""
     model_id = request.GET.get("model_id")
     express_id = request.GET.get("express_id")
+    filename = request.GET.get("filename")
+    metadata_param = request.GET.get("metadata")
+    model_uuid = request.GET.get("model_uuid")
     if not model_id or express_id is None:
         return JsonResponse({"error": "model_id and express_id required"}, status=400)
 
@@ -186,7 +189,21 @@ def get_element_info_view(request):
         return JsonResponse({"error": "model not found"}, status=404)
 
     ifc_path = upload.file.path
-    info = get_element_info(ifc_path, int(express_id))
+    express_int = int(express_id)
+    info = get_element_info(ifc_path, express_int)
+
+    if filename and metadata_param:
+        try:
+            metadata = json.loads(metadata_param)
+        except Exception:
+            metadata = {}
+
+        metadata.setdefault("expressID", express_int)
+        if model_uuid:
+            metadata.setdefault("modelUUID", model_uuid)
+
+        save_metadata_and_create_component(metadata, filename)
+
     return JsonResponse(info)
 
 
@@ -226,6 +243,8 @@ def save_component_metadata(request):
     path = save_metadata_and_create_component(metadata, filename)
 
     return JsonResponse({"path": path})
+
+
 
 
 
