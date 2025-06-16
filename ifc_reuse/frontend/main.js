@@ -692,22 +692,16 @@ function setupSelection() {
                 console.log('📤 Sending json_file_path to backend:', jsonFilePath);
 
                 try {
-                    const formData = new FormData();
-                    if (fragData) {
-                        formData.append(
-                            'fragment',
-                            new Blob([fragData]),
-                            `${nameBase}.frag`
-                        );
+                    const response = await fetch('/save-component-metadata/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ metadata, filename: `${nameBase}.json` })
+                    });
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
                     }
-                    formData.append(
-                        'metadata',
-                        new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' }),
-                        `${nameBase}.json`
-                    );
-
-
-
+                    const data = await response.json();
+                    console.log('✅ Metadata stored on server:', data.path);
                 } catch (err) {
                     console.error('❌ Failed to upload component:', err);
                 }
