@@ -53,16 +53,41 @@ def categories(request):
 
 
 def catalog_api(request):
-    """Return components grouped by type as JSON."""
-    components = ReusableComponent.objects.all().values('type', 'name', 'global_id')
+    """Return components grouped by type as JSON.
+
+    This version reads the metadata JSON files stored under
+    ``MEDIA_ROOT/reusable_components`` instead of querying the
+    ``ReusableComponent`` model.  Each ``*.json`` file is expected to
+    contain keys like ``type``, ``Name`` and ``GlobalId``.  Components are
+    grouped by the ``type`` value.
+    """
+
+    comp_dir = os.path.join(settings.MEDIA_ROOT, "reusable_components")
     categories = {}
-    for comp in components:
-        cat = comp['type'] or 'Unknown'
-        info = {
-            'name': comp['name'],
-            'global_id': comp['global_id'],
-        }
-        categories.setdefault(cat, []).append(info)
+
+    if os.path.isdir(comp_dir):
+        for fname in os.listdir(comp_dir):
+            if not fname.endswith(".json"):
+                continue
+            path = os.path.join(comp_dir, fname)
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            except Exception:
+                # Skip unreadable or invalid JSON files
+                continue
+
+            cat = data.get("type", "Unknown")
+            name = data.get("Name")
+            if isinstance(name, dict):
+                name = name.get("value")
+            gid = data.get("GlobalId")
+            if isinstance(gid, dict):
+                gid = gid.get("value")
+
+            info = {"name": name or "Unnamed", "global_id": gid or ""}
+            categories.setdefault(cat, []).append(info)
+
     return JsonResponse(categories)
 
 
