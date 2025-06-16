@@ -706,16 +706,7 @@ function setupSelection() {
                         `${nameBase}.json`
                     );
 
-                    const uploadResp = await fetch('/upload-fragment/', {
-                        method: 'POST',
-                        body: formData,
-                    });
-                    if (uploadResp.ok) {
-                        const result = await uploadResp.json();
-                        console.log('✅ Component stored:', result);
-                    } else {
-                        console.warn('⚠️ Backend rejected upload:', uploadResp.statusText);
-                    }
+
                 } catch (err) {
                     console.error('❌ Failed to upload component:', err);
                 }
