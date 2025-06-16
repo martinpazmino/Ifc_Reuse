@@ -225,6 +225,26 @@ def reusable_components(request):
     return JsonResponse(list(components), safe=False)
 
 
+@require_http_methods(["POST"])
+def save_component_metadata(request):
+    """Save metadata JSON and create a ``ReusableComponent`` entry."""
+
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except Exception:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    metadata = payload.get("metadata")
+    filename = payload.get("filename")
+
+    if not isinstance(metadata, dict) or not filename:
+        return JsonResponse({"error": "metadata and filename required"}, status=400)
+
+    path = save_metadata_and_create_component(metadata, filename)
+
+    return JsonResponse({"path": path})
+
+
 
 
 
