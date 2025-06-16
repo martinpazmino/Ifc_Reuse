@@ -692,22 +692,14 @@ function setupSelection() {
                 console.log('📤 Sending json_file_path to backend:', jsonFilePath);
 
                 try {
-                    const formData = new FormData();
-                    if (fragData) {
-                        formData.append(
-                            'fragment',
-                            new Blob([fragData]),
-                            `${nameBase}.frag`
-                        );
+                    const url = `/get-element-info/?model_id=${encodeURIComponent(currentModelId)}&express_id=${expressID}` +
+                        `&filename=${encodeURIComponent(`${nameBase}.json`)}&model_uuid=${encodeURIComponent(modelGroupUUID)}` +
+                        `&metadata=${encodeURIComponent(JSON.stringify(metadata))}`;
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
                     }
-                    formData.append(
-                        'metadata',
-                        new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' }),
-                        `${nameBase}.json`
-                    );
-
-
-
+                    console.log('✅ Metadata stored on server');
                 } catch (err) {
                     console.error('❌ Failed to upload component:', err);
                 }
