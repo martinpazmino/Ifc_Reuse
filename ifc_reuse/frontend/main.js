@@ -691,6 +691,35 @@ function setupSelection() {
                 const jsonFilePath = `reusable_components/${nameBase}.json`;
                 console.log('📤 Sending json_file_path to backend:', jsonFilePath);
 
+                try {
+                    const formData = new FormData();
+                    if (fragData) {
+                        formData.append(
+                            'fragment',
+                            new Blob([fragData]),
+                            `${nameBase}.frag`
+                        );
+                    }
+                    formData.append(
+                        'metadata',
+                        new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' }),
+                        `${nameBase}.json`
+                    );
+
+                    const uploadResp = await fetch('/upload-fragment/', {
+                        method: 'POST',
+                        body: formData,
+                    });
+                    if (uploadResp.ok) {
+                        const result = await uploadResp.json();
+                        console.log('✅ Component stored:', result);
+                    } else {
+                        console.warn('⚠️ Backend rejected upload:', uploadResp.statusText);
+                    }
+                } catch (err) {
+                    console.error('❌ Failed to upload component:', err);
+                }
+
                 saveButton.style.display = 'none';
             } catch (err) {
                 console.error('❌ Save error:', err);
