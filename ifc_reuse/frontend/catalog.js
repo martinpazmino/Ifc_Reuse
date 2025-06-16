@@ -1,6 +1,6 @@
 const container = document.getElementById('catalog-container');
 
-fetch('http://localhost:8000/api/catalog/')
+fetch('/reusable-components/')
   .then(response => response.json())
   .then(data => {
     data.forEach(component => {
