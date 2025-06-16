@@ -1,3 +1,6 @@
 from django.contrib import admin
+from .models import UploadedIFC, ReusableComponent
 
-# Register your models here.
+admin.site.register(UploadedIFC)
+admin.site.register(ReusableComponent)
+
