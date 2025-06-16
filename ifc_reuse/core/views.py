@@ -291,7 +291,8 @@ def mark_component(request):
     try:
         upload = UploadedIFC.objects.get(file__contains=model_uuid)
     except UploadedIFC.DoesNotExist:
-        upload = None
+        return JsonResponse({"error": "model not found"}, status=404)
+
 
     component = ReusableComponent.objects.create(
         ifc_file=upload,
