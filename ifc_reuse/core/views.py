@@ -260,39 +260,52 @@ def upload_fragment(request):
 def mark_component(request):
     """Create a :class:`ReusableComponent` from an uploaded fragment.
 
-    This view is intended to be called via ``POST`` with a JSON body
-    containing a ``json_file_path`` key.  Previously a ``GET`` request would
-    reach this view and Django would raise a ``ValueError`` because no
-    ``HttpResponse`` was returned.  The ``@require_http_methods`` decorator
-    now ensures a proper ``405 Method Not Allowed`` response is returned for
-    other HTTP methods.
+    The request must contain JSON with a ``json_file_path`` key.  Previously the
+    view assumed valid input which could lead to uncaught exceptions and a 500
+    response.  Extra validation is now performed so bad requests result in a
+    clear error message.
     """
 
-    data = json.loads(request.body)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "invalid JSON"}, status=400)
+
     json_file_path = data.get("json_file_path")
     if not json_file_path:
         return JsonResponse({"error": "json_file_path required"}, status=400)
 
-    full_json_path = os.path.join(settings.MEDIA_ROOT, json_file_path)
+    full_json_path = os.path.normpath(os.path.join(settings.MEDIA_ROOT, json_file_path))
+    if not full_json_path.startswith(str(settings.MEDIA_ROOT)):
+        return JsonResponse({"error": "invalid path"}, status=400)
+
     try:
         with open(full_json_path, "r", encoding="utf-8") as f:
             metadata = json.load(f)
     except FileNotFoundError:
         return JsonResponse({"error": "metadata file not found"}, status=404)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "invalid metadata JSON"}, status=400)
 
     express_id = metadata.get("expressID")
     model_uuid = metadata.get("modelUUID")
     if express_id is None or not model_uuid:
         return JsonResponse({"error": "invalid metadata"}, status=400)
 
+    try:
+        express_id_int = int(express_id)
+    except (TypeError, ValueError):
+        return JsonResponse({"error": "invalid expressID"}, status=400)
+
     ifc_path = os.path.join(settings.MEDIA_ROOT, "ifc_files", f"{model_uuid}.ifc")
-    info = get_element_info(ifc_path, int(express_id))
+    info = get_element_info(ifc_path, express_id_int)
 
     try:
         upload = UploadedIFC.objects.get(file__contains=model_uuid)
     except UploadedIFC.DoesNotExist:
         return JsonResponse({"error": "model not found"}, status=404)
-
+    except UploadedIFC.MultipleObjectsReturned:
+        upload = UploadedIFC.objects.filter(file__contains=model_uuid).first()
 
     component = ReusableComponent.objects.create(
         ifc_file=upload,
