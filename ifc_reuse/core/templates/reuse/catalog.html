@@ -31,6 +31,7 @@
             <nav class="flex items-center space-x-4 ml-4 text-lg">
                 <a href="{% url 'core:index' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Home</a>
                 <a href="{% url 'core:catalog' %}" class="text-[#4CAF50] font-semibold">Katalog</a>
+                <a href="{% url 'core:categories' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Kategorien</a>
                 <a href="{% url 'core:upload_page' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Upload</a>
                 <a href="{% url 'core:api' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">API</a>
                 <a href="{% url 'core:about' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Über Uns</a>
@@ -140,7 +141,7 @@
             }
         });
         // Fetch components
-        fetch('/api/catalog/')
+        fetch('/reusable-components/')
             .then(response => response.json())
             .then(data => {
                 const catalogContent = document.getElementById('catalog-content');

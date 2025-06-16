@@ -24,6 +24,34 @@ def catalog(request):
     return render(request, "reuse/catalog.html")
 
 
+def categories(request):
+    comp_dir = os.path.join(settings.MEDIA_ROOT, "reusable_components")
+    categories = {}
+    if os.path.isdir(comp_dir):
+        for fname in os.listdir(comp_dir):
+            if not fname.endswith(".json"):
+                continue
+            path = os.path.join(comp_dir, fname)
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            except Exception:
+                continue
+
+            cat = data.get("type", "Unknown")
+            name = data.get("Name")
+            if isinstance(name, dict):
+                name = name.get("value")
+            gid = data.get("GlobalId")
+            if isinstance(gid, dict):
+                gid = gid.get("value")
+
+            info = {"name": name or "Unnamed", "global_id": gid or ""}
+            categories.setdefault(cat, []).append(info)
+
+    return render(request, "reuse/categories.html", {"categories": categories})
+
+
 def upload_page(request):
     return render(request, 'reuse/upload.html')
 
