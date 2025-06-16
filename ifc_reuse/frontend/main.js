@@ -694,6 +694,24 @@ function setupSelection() {
                 }
 
                 alert('✅ Component saved locally!');
+
+                try {
+                    const resp = await fetch('/mark-component/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(metadata),
+                    });
+                    if (resp.ok) {
+                        console.log('✅ Metadata sent to backend');
+                    } else {
+                        console.warn('⚠️ Failed to send metadata:', resp.statusText);
+                    }
+                } catch (err) {
+                    console.warn('⚠️ Error sending metadata:', err);
+                }
+
                 saveButton.style.display = 'none';
             } catch (err) {
                 console.error('❌ Save error:', err);
