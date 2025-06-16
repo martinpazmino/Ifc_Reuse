@@ -1,5 +1,14 @@
+import json
+import os
+
 import ifcopenshell
 from typing import Dict, List, Optional
+
+from django.conf import settings
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+
+from .models import UploadedIFC, ReusableComponent
 
 
 def get_element_info(ifc_path: str, express_id: int) -> Dict[str, object]:
@@ -85,3 +94,49 @@ def get_element_info(ifc_path: str, express_id: int) -> Dict[str, object]:
         pass
 
     return info
+
+
+def save_metadata_and_create_component(metadata: Dict[str, object], filename: str) -> str:
+    """Save metadata JSON and create a :class:`ReusableComponent`.
+
+    The JSON file is stored under ``MEDIA_ROOT/reusable_components`` and a
+    corresponding database row is inserted using information extracted from the
+    referenced IFC model.
+    """
+
+    base_path = "reusable_components"
+    json_content = json.dumps(metadata, indent=2)
+    json_path = default_storage.save(
+        os.path.join(base_path, filename),
+        ContentFile(json_content.encode("utf-8")),
+    )
+
+    express_id = metadata.get("expressID")
+    model_uuid = metadata.get("modelUUID")
+    if express_id is None or not model_uuid:
+        return json_path
+
+    try:
+        express_id_int = int(express_id)
+    except (TypeError, ValueError):
+        return json_path
+
+    ifc_path = os.path.join(settings.MEDIA_ROOT, "ifc_files", f"{model_uuid}.ifc")
+    info = get_element_info(ifc_path, express_id_int)
+
+    try:
+        upload = UploadedIFC.objects.get(file__contains=model_uuid)
+    except UploadedIFC.DoesNotExist:
+        upload = None
+    except UploadedIFC.MultipleObjectsReturned:
+        upload = UploadedIFC.objects.filter(file__contains=model_uuid).first()
+
+    ReusableComponent.objects.create(
+        ifc_file=upload,
+        component_type=info.get("type", "Unknown"),
+        storey=info.get("storey"),
+        material_name=info.get("material"),
+        json_file_path=json_path,
+    )
+
+    return json_path
