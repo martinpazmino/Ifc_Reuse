@@ -19,4 +19,4 @@ class ReusableComponent(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.component_type} ({self.ifc_file.name})"
