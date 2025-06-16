@@ -318,7 +318,7 @@ def reusable_components(request):
     return JsonResponse(list(components), safe=False)
 
 
-@require_http_methods(["POST"])
+
 def upload_ifc_file(request):
     file = request.FILES.get('file')
     if not file:

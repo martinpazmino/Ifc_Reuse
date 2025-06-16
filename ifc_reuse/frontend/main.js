@@ -23,6 +23,20 @@ let propertiesTable = null;
 let updatePropertiesTable = null;
 let propertiesPanel = null;
 
+
+function getCSRFToken() {
+    const name = 'csrftoken';
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + '=')) {
+            return decodeURIComponent(cookie.substring(name.length + 1));
+        }
+    }
+    return '';
+}
+
+
 // Wait for DOM to be ready
 function waitForDOM() {
     return new Promise((resolve) => {
@@ -685,32 +699,23 @@ function setupSelection() {
                 await jsonWritable.close();
                 console.log('✅ Metadata saved:', `${nameBase}.json`);
 
-                if (fragData) {
-                    const fragFileHandle = await dirHandle.getFileHandle(`${nameBase}.frag`, { create: true });
-                    const fragWritable = await fragFileHandle.createWritable();
-                    await fragWritable.write(fragData);
-                    await fragWritable.close();
-                    console.log('✅ Fragment data saved:', `${nameBase}.frag`);
-                }
+                const jsonFilePath = `reusable_components/${nameBase}.json`;
+                console.log('📤 Sending json_file_path to backend:', jsonFilePath);
 
-                alert('✅ Component saved locally!');
+                const csrfToken = getCSRFToken();
 
-                try {
-                    const resp = await fetch('/mark-component/', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(metadata),
-                    });
-                    if (resp.ok) {
-                        console.log('✅ Metadata sent to backend');
-                    } else {
-                        console.warn('⚠️ Failed to send metadata:', resp.statusText);
-                    }
-                } catch (err) {
-                    console.warn('⚠️ Error sending metadata:', err);
-                }
+                const resp = await fetch('/mark-component/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken,
+                    },
+                    body: JSON.stringify({ json_file_path: jsonFilePath }),
+                });
+
+
+
+
 
                 saveButton.style.display = 'none';
             } catch (err) {
