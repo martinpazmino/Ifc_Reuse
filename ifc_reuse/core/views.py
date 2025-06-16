@@ -1,10 +1,9 @@
-from django.views.decorators.csrf import csrf_exempt
+
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from .models import ReusableComponent, UploadedIFC
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
+
 from django.conf import settings
 from .utils import get_element_info, save_metadata_and_create_component
 import json
@@ -191,47 +190,6 @@ def get_element_info_view(request):
     return JsonResponse(info)
 
 
-@csrf_exempt
-def upload_fragment(request):
-    if request.method == "POST" and request.FILES:
-        frag_file = request.FILES.get("fragment")
-        json_file = request.FILES.get("metadata")
-        base_path = "reusable_components/"
-        frag_path = default_storage.save(
-            os.path.join(base_path, frag_file.name),
-            ContentFile(frag_file.read())
-        )
-
-        metadata = json.loads(json_file.read().decode("utf-8"))
-
-        ifc_filename = metadata.get("modelUUID")
-        express_id = metadata.get("expressID")
-        if ifc_filename and express_id is not None:
-            ifc_path = os.path.join(settings.MEDIA_ROOT, "ifc_files", f"{ifc_filename}.ifc")
-            info = get_element_info(ifc_path, int(express_id))
-            metadata["Type"] = info.get("type", "Unknown")
-            if "predefinedType" in info:
-                metadata["PredefinedType"] = info["predefinedType"]
-            if "material" in info:
-                metadata["Material"] = info["material"]
-            metadata["materials"] = info.get("materials", [])
-            if "storey" in info:
-                metadata["Storey"] = info["storey"]
-
-            try:
-                upload = UploadedIFC.objects.get(file__contains=ifc_filename)
-                metadata["Location"] = upload.location or metadata.get("Location", "Unknown")
-            except UploadedIFC.DoesNotExist:
-                pass
-
-        json_path = save_metadata_and_create_component(metadata, json_file.name)
-
-        return JsonResponse({
-            "status": "ok",
-            "fragment_url": default_storage.url(frag_path),
-            "metadata_url": default_storage.url(json_path),
-        })
-    return JsonResponse({"status": "error", "message": "Invalid request"}, status=400)
 
 
 @require_http_methods(["POST"])
