@@ -1,5 +1,6 @@
 import json
 import os
+import django
 
 import ifcopenshell
 from typing import Dict, List, Optional
@@ -10,7 +11,8 @@ from django.core.files.storage import default_storage
 
 from .models import UploadedIFC, ReusableComponent
 
-
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ifc_reuse.settings")
+django.setup()
 def get_element_info(ifc_path: str, express_id: int) -> Dict[str, object]:
     """Return basic IFC metadata for the given element."""
 
@@ -97,13 +99,15 @@ def get_element_info(ifc_path: str, express_id: int) -> Dict[str, object]:
 
 
 def save_metadata_and_create_component(metadata: Dict[str, object], filename: str) -> str:
-    """Save metadata JSON and create a :class:`ReusableComponent`.
+    """
+    Save metadata as a JSON file and create a ReusableComponent entry in the database.
 
-    The JSON file is stored under ``MEDIA_ROOT/reusable_components`` and a
-    corresponding database row is inserted using information extracted from the
-    referenced IFC model.
+    - Stores the JSON in MEDIA_ROOT/reusable_components/<filename>
+    - Extracts info from the IFC model using expressID and modelUUID
+    - Links the component to the corresponding UploadedIFC entry
     """
 
+    # 1. Save JSON metadata to disk
     base_path = "reusable_components"
     json_content = json.dumps(metadata, indent=2)
     json_path = default_storage.save(
@@ -111,19 +115,22 @@ def save_metadata_and_create_component(metadata: Dict[str, object], filename: st
         ContentFile(json_content.encode("utf-8")),
     )
 
+    # 2. Extract IDs from metadata
     express_id = metadata.get("expressID")
     model_uuid = metadata.get("modelUUID")
-    if express_id is None or not model_uuid:
+    if not express_id or not model_uuid:
         return json_path
 
     try:
-        express_id_int = int(express_id)
+        express_id = int(express_id)
     except (TypeError, ValueError):
         return json_path
 
+    # 3. Get element info from IFC file
     ifc_path = os.path.join(settings.MEDIA_ROOT, "ifc_files", f"{model_uuid}.ifc")
-    info = get_element_info(ifc_path, express_id_int)
+    info = get_element_info(ifc_path, express_id)
 
+    # 4. Find matching UploadedIFC object
     try:
         upload = UploadedIFC.objects.get(file__contains=model_uuid)
     except UploadedIFC.DoesNotExist:
@@ -131,6 +138,7 @@ def save_metadata_and_create_component(metadata: Dict[str, object], filename: st
     except UploadedIFC.MultipleObjectsReturned:
         upload = UploadedIFC.objects.filter(file__contains=model_uuid).first()
 
+    # 5. Create ReusableComponent entry
     ReusableComponent.objects.create(
         ifc_file=upload,
         component_type=info.get("type", "Unknown"),

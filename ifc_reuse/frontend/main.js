@@ -691,34 +691,6 @@ function setupSelection() {
                 const jsonFilePath = `reusable_components/${nameBase}.json`;
                 console.log('📤 Sending json_file_path to backend:', jsonFilePath);
 
-                function getCSRFToken() {
-                    const name = 'csrftoken';
-                    const cookies = document.cookie.split(';');
-                    for (let cookie of cookies) {
-                        cookie = cookie.trim();
-                        if (cookie.startsWith(name + '=')) {
-                            return decodeURIComponent(cookie.substring(name.length + 1));
-                        }
-                    }
-                    return '';
-                }
-
-                const csrfToken = getCSRFToken();
-
-                const resp = await fetch('/mark-component/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken, // ✅ Required for Django
-                    },
-                    body: JSON.stringify(metadata),
-                });
-
-
-
-
-
-
                 saveButton.style.display = 'none';
             } catch (err) {
                 console.error('❌ Save error:', err);
