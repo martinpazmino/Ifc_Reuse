@@ -234,6 +234,20 @@ def upload_fragment(request):
             os.path.join(base_path, json_file.name),
             ContentFile(json_content.encode("utf-8"))
         )
+
+        try:
+            upload = UploadedIFC.objects.get(file__contains=ifc_filename) if ifc_filename else None
+        except UploadedIFC.DoesNotExist:
+            upload = None
+
+        ReusableComponent.objects.create(
+            ifc_file=upload,
+            component_type=metadata.get("Type", "Unknown"),
+            storey=metadata.get("Storey"),
+            material_name=metadata.get("Material"),
+            json_file_path=json_path,
+        )
+
         return JsonResponse({
             "status": "ok",
             "fragment_url": default_storage.url(frag_path),
