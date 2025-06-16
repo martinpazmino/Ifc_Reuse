@@ -138,13 +138,14 @@ def save_metadata_and_create_component(metadata: Dict[str, object], filename: st
     except UploadedIFC.MultipleObjectsReturned:
         upload = UploadedIFC.objects.filter(file__contains=model_uuid).first()
 
-    # 5. Create ReusableComponent entry
-    ReusableComponent.objects.create(
-        ifc_file=upload,
-        component_type=info.get("type", "Unknown"),
-        storey=info.get("storey"),
-        material_name=info.get("material"),
-        json_file_path=json_path,
-    )
+    # 5. Create ReusableComponent entry only if we found the IFC upload
+    if upload:
+        ReusableComponent.objects.create(
+            ifc_file=upload,
+            component_type=info.get("type", "Unknown"),
+            storey=info.get("storey"),
+            material_name=info.get("material"),
+            json_file_path=json_path,
+        )
 
     return json_path

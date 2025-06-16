@@ -706,6 +706,15 @@ function setupSelection() {
                         `${nameBase}.json`
                     );
 
+                    const uploadResp = await fetch('/upload-fragment/', {
+                        method: 'POST',
+                        body: formData,
+                    });
+                    if (uploadResp.ok) {
+                        console.log('✅ Component uploaded');
+                    } else {
+                        console.error('❌ Failed to upload component:', uploadResp.statusText);
+                    }
 
                 } catch (err) {
                     console.error('❌ Failed to upload component:', err);
