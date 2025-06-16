@@ -245,19 +245,51 @@ def upload_fragment(request):
 def mark_component(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        component, created = ReusableComponent.objects.get_or_create(
-            global_id=data['global_id'],
-            defaults={
-                'name': data['name'],
-                'type': data['type']
-            }
+        json_file_path = data.get("json_file_path")
+        if not json_file_path:
+            return JsonResponse({"error": "json_file_path required"}, status=400)
+
+        full_json_path = os.path.join(settings.MEDIA_ROOT, json_file_path)
+        try:
+            with open(full_json_path, "r", encoding="utf-8") as f:
+                metadata = json.load(f)
+        except FileNotFoundError:
+            return JsonResponse({"error": "metadata file not found"}, status=404)
+
+        express_id = metadata.get("expressID")
+        model_uuid = metadata.get("modelUUID")
+        if express_id is None or not model_uuid:
+            return JsonResponse({"error": "invalid metadata"}, status=400)
+
+        ifc_path = os.path.join(settings.MEDIA_ROOT, "ifc_files", f"{model_uuid}.ifc")
+        info = get_element_info(ifc_path, int(express_id))
+
+        try:
+            upload = UploadedIFC.objects.get(file__contains=model_uuid)
+        except UploadedIFC.DoesNotExist:
+            upload = None
+
+        component = ReusableComponent.objects.create(
+            ifc_file=upload,
+            component_type=info.get("type", "Unknown"),
+            storey=info.get("storey"),
+            material_name=info.get("material"),
+            json_file_path=json_file_path,
         )
-        return JsonResponse({'status': 'ok', 'created': created})
+
+        return JsonResponse({"status": "ok", "component_id": component.id})
 
 
 def reusable_components(request):
-    components = ReusableComponent.objects.all().values(
-        'global_id', 'name', 'type', 'created_at'
+    components = ReusableComponent.objects.select_related("ifc_file").all().values(
+        "id",
+        "ifc_file__id",
+        "ifc_file__name",
+        "component_type",
+        "storey",
+        "material_name",
+        "json_file_path",
+        "uploaded_at",
     )
     return JsonResponse(list(components), safe=False)
 
