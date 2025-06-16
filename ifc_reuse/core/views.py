@@ -52,6 +52,20 @@ def categories(request):
     return render(request, "reuse/categories.html", {"categories": categories})
 
 
+def catalog_api(request):
+    """Return components grouped by type as JSON."""
+    components = ReusableComponent.objects.all().values('type', 'name', 'global_id')
+    categories = {}
+    for comp in components:
+        cat = comp['type'] or 'Unknown'
+        info = {
+            'name': comp['name'],
+            'global_id': comp['global_id'],
+        }
+        categories.setdefault(cat, []).append(info)
+    return JsonResponse(categories)
+
+
 def upload_page(request):
     return render(request, 'reuse/upload.html')
 
