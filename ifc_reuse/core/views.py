@@ -6,7 +6,7 @@ from .models import ReusableComponent, UploadedIFC
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
-from .utils import get_element_info
+from .utils import get_element_info, save_metadata_and_create_component
 import json
 import os
 from django.contrib.auth.decorators import login_required
@@ -224,24 +224,7 @@ def upload_fragment(request):
             except UploadedIFC.DoesNotExist:
                 pass
 
-        json_content = json.dumps(metadata, indent=2)
-        json_path = default_storage.save(
-            os.path.join(base_path, json_file.name),
-            ContentFile(json_content.encode("utf-8"))
-        )
-
-        try:
-            upload = UploadedIFC.objects.get(file__contains=ifc_filename) if ifc_filename else None
-        except UploadedIFC.DoesNotExist:
-            upload = None
-
-        ReusableComponent.objects.create(
-            ifc_file=upload,
-            component_type=metadata.get("Type", "Unknown"),
-            storey=metadata.get("Storey"),
-            material_name=metadata.get("Material"),
-            json_file_path=json_path,
-        )
+        json_path = save_metadata_and_create_component(metadata, json_file.name)
 
         return JsonResponse({
             "status": "ok",
