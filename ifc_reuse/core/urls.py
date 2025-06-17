@@ -8,7 +8,8 @@ urlpatterns = [
 
     path('catalog/', views.categories, name='catalog'),
     path('upload/', views.upload_page, name='upload_page'),
-    path('viewer/<int:model_id>/', views.viewer_page, name='viewer_page'),
+    path('upload-ifc/', views.upload_ifc, name='upload_ifc'),
+
     path('about/', views.about, name='about'),
     path('settings/', views.account_settings, name='settings'),
     path('list-ifcs/', views.list_uploaded_ifcs, name='list_ifcs'),

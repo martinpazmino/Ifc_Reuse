@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from .models import ReusableComponent, UploadedIFC
 from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_POST
 from django.conf import settings
 from .utils import get_element_info, save_metadata_and_create_component
 import json
@@ -280,7 +281,10 @@ def reusable_components(request):
     )
     return JsonResponse(list(components), safe=False)
 
-
+@require_POST
+def upload_ifc(request):
+    # Your logic for handling file upload
+    return JsonResponse({"message": "Upload received"})
 
 
 
