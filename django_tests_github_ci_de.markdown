@@ -414,4 +414,4 @@ Pushen Sie den Code in Ihr GitHub-Repository, und die Tests laufen automatisch b
 
 
 
-![Alternativtext](https://github.com/martinpazmino/Ifc_Reuse/blob/master/Screenshot%202025-06-17%20000239.png)
+![Alternativtext](https://github.com/martinpazmino/Ifc_Reuse/blob/master/Screenshot%202025-06-17%20140752.png)
