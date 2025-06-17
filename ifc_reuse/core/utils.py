@@ -98,13 +98,17 @@ def get_element_info(ifc_path: str, express_id: int) -> Dict[str, object]:
     return info
 
 
-def save_metadata_and_create_component(metadata: Dict[str, object], filename: str) -> str:
+def save_metadata_and_create_component(
+    metadata: Dict[str, object],
+    filename: str,
+    model_id: Optional[int] = None
+) -> str:
     """
     Save metadata as a JSON file and create a ReusableComponent entry in the database.
 
     - Stores the JSON in MEDIA_ROOT/reusable_components/<filename>
     - Extracts info from the IFC model using expressID and modelUUID
-    - Links the component to the corresponding UploadedIFC entry
+    - Links the component to the corresponding UploadedIFC entry using model_id
     """
 
     # 1. Save JSON metadata to disk
@@ -115,10 +119,12 @@ def save_metadata_and_create_component(metadata: Dict[str, object], filename: st
         ContentFile(json_content.encode("utf-8")),
     )
 
-    # 2. Extract IDs from metadata
+    # 2. Extract expressID and modelUUID
     express_id = metadata.get("expressID")
     model_uuid = metadata.get("modelUUID")
-    if not express_id or not model_uuid:
+
+    if express_id is None or not model_uuid:
+        # Required keys missing
         return json_path
 
     try:
@@ -126,19 +132,19 @@ def save_metadata_and_create_component(metadata: Dict[str, object], filename: st
     except (TypeError, ValueError):
         return json_path
 
-    # 3. Get element info from IFC file
+    # 3. Get element info from IFC file (for type/material/etc.)
     ifc_path = os.path.join(settings.MEDIA_ROOT, "ifc_files", f"{model_uuid}.ifc")
     info = get_element_info(ifc_path, express_id)
 
-    # 4. Find matching UploadedIFC object
-    try:
-        upload = UploadedIFC.objects.get(file__contains=model_uuid)
-    except UploadedIFC.DoesNotExist:
-        upload = None
-    except UploadedIFC.MultipleObjectsReturned:
-        upload = UploadedIFC.objects.filter(file__contains=model_uuid).first()
+    # 4. Lookup UploadedIFC from model_id
+    upload = None
+    if model_id is not None:
+        try:
+            upload = UploadedIFC.objects.get(id=model_id)
+        except UploadedIFC.DoesNotExist:
+            pass
 
-    # 5. Create ReusableComponent entry only if we found the IFC upload
+    # 5. Save to database if everything is in place
     if upload:
         ReusableComponent.objects.create(
             ifc_file=upload,
@@ -149,3 +155,4 @@ def save_metadata_and_create_component(metadata: Dict[str, object], filename: st
         )
 
     return json_path
+

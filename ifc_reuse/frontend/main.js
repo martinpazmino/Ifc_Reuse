@@ -696,11 +696,13 @@ function setupSelection() {
                     const url = `/get-element-info/?model_id=${encodeURIComponent(currentModelId)}&express_id=${expressID}` +
                         `&filename=${encodeURIComponent(`${nameBase}.json`)}&model_uuid=${encodeURIComponent(modelGroupUUID)}` +
                         `&metadata=${encodeURIComponent(JSON.stringify(metadata))}`;
+
                     const response = await fetch(url);
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}`);
                     }
                     console.log('✅ Metadata stored on server');
+
 
                 } catch (err) {
                     console.error('❌ Failed to upload component:', err);

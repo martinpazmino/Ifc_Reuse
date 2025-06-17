@@ -3,11 +3,15 @@ from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from .models import ReusableComponent, UploadedIFC
-
+from django.views.decorators.http import require_GET
 from django.conf import settings
 from .utils import get_element_info, save_metadata_and_create_component
 import json
 import os
+from typing import Dict, Optional
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate
 from django.contrib import messages
@@ -174,24 +178,31 @@ def ifc_files_api(request):
 
 @require_http_methods(["GET"])
 def get_element_info_view(request):
-    """Return metadata for a single IFC element."""
+    """Return metadata for a single IFC element and optionally save it as a reusable component."""
     model_id = request.GET.get("model_id")
     express_id = request.GET.get("express_id")
     filename = request.GET.get("filename")
     metadata_param = request.GET.get("metadata")
     model_uuid = request.GET.get("model_uuid")
+
     if not model_id or express_id is None:
         return JsonResponse({"error": "model_id and express_id required"}, status=400)
 
     try:
-        upload = UploadedIFC.objects.get(pk=model_id)
+        model_id_int = int(model_id)
+        express_int = int(express_id)
+    except (ValueError, TypeError):
+        return JsonResponse({"error": "Invalid model_id or express_id"}, status=400)
+
+    try:
+        upload = UploadedIFC.objects.get(pk=model_id_int)
     except UploadedIFC.DoesNotExist:
         return JsonResponse({"error": "model not found"}, status=404)
 
     ifc_path = upload.file.path
-    express_int = int(express_id)
     info = get_element_info(ifc_path, express_int)
 
+    # Optional: Save metadata as a reusable component
     if filename and metadata_param:
         try:
             metadata = json.loads(metadata_param)
@@ -202,12 +213,57 @@ def get_element_info_view(request):
         if model_uuid:
             metadata.setdefault("modelUUID", model_uuid)
 
-        save_metadata_and_create_component(metadata, filename)
+        save_metadata_and_create_component(metadata, filename, model_id=model_id_int)
 
     return JsonResponse(info)
+def save_metadata_and_create_component(
+    metadata: Dict[str, object],
+    filename: str,
+    model_id: Optional[int] = None
+) -> str:
+    base_path = "reusable_components"
+    json_content = json.dumps(metadata, indent=2)
+    json_path = default_storage.save(
+        os.path.join(base_path, filename),
+        ContentFile(json_content.encode("utf-8")),
+    )
 
+    express_id = metadata.get("expressID")
+    model_uuid = metadata.get("modelUUID")
 
+    if express_id is None or not model_uuid:
+        return json_path
 
+    try:
+        express_id = int(express_id)
+    except (TypeError, ValueError):
+        return json_path
+
+    # ✅ Move this earlier
+    upload = None
+    if model_id is not None:
+        try:
+            upload = UploadedIFC.objects.get(id=model_id)
+        except UploadedIFC.DoesNotExist:
+            pass
+
+    # ✅ Now it's safe to access upload.file
+    if upload and upload.file:
+        ifc_path = upload.file.path
+        info = get_element_info(ifc_path, express_id)
+
+        # Save to DB
+        ReusableComponent.objects.create(
+            ifc_file=upload,
+            component_type=info.get("type", "Unknown"),
+            storey=info.get("storey"),
+            material_name=info.get("material"),
+            json_file_path=json_path,
+        )
+    else:
+        print("❌ UploadedIFC not found or missing .file")
+
+    return json_path
 
 @require_http_methods(["POST"])
 
@@ -223,26 +279,6 @@ def reusable_components(request):
         "uploaded_at",
     )
     return JsonResponse(list(components), safe=False)
-
-
-@require_http_methods(["POST"])
-def save_component_metadata(request):
-    """Save metadata JSON and create a ``ReusableComponent`` entry."""
-
-    try:
-        payload = json.loads(request.body.decode("utf-8"))
-    except Exception:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
-
-    metadata = payload.get("metadata")
-    filename = payload.get("filename")
-
-    if not isinstance(metadata, dict) or not filename:
-        return JsonResponse({"error": "metadata and filename required"}, status=400)
-
-    path = save_metadata_and_create_component(metadata, filename)
-
-    return JsonResponse({"path": path})
 
 
 

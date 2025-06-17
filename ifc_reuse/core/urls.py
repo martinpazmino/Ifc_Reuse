@@ -18,6 +18,6 @@ urlpatterns = [
     path('reusable-components/', views.reusable_components, name='reusable_components'),
     path('api/catalog/', views.catalog_api, name='catalog_api'),
     path('get-element-info/', views.get_element_info_view, name='get_element_info'),
-    path('save-component-metadata/', views.save_component_metadata, name='save_component_metadata'),
+    path('save-component-metadata/', views.save_metadata_and_create_component, name='save_component_metadata'),
 
 ]
