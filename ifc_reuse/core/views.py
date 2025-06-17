@@ -283,8 +283,29 @@ def reusable_components(request):
 
 @require_POST
 def upload_ifc(request):
-    # Your logic for handling file upload
-    return JsonResponse({"message": "Upload received"})
+    """Handle IFC file upload and create an :class:`UploadedIFC` entry."""
+
+    file = request.FILES.get("file")
+    if not file:
+        return JsonResponse({"error": "No file provided"}, status=400)
+
+    project_name = request.POST.get("project_name", "")
+    location = request.POST.get("location", "")
+
+    upload = UploadedIFC.objects.create(
+        name=file.name,
+        file=file,
+        project_name=project_name,
+        location=location,
+    )
+
+    return JsonResponse(
+        {
+            "status": "uploaded",
+            "file_url": upload.file.url,
+            "id": upload.id,
+        }
+    )
 
 
 
