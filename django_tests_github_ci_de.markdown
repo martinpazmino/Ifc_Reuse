@@ -411,3 +411,7 @@ Nach dem Pushen des Codes:
 - **Erweiterungen**: Unterstützung für PostgreSQL, Linting und Caching möglich.
 
 Pushen Sie den Code in Ihr GitHub-Repository, und die Tests laufen automatisch bei jedem Commit oder Pull-Request. Wenn Sie Hilfe bei spezifischen Testfällen, PostgreSQL-Integration oder Fehlerbehebung benötigen, lassen Sie es mich wissen!
+
+
+
+![Alternativtext](https://github.com/martinpazmino/Ifc_Reuse/blob/master/Screenshot%202025-06-17%20000239.png)
