@@ -174,12 +174,12 @@
         .comment-input {
             width: 100%;
             background-color: #374151;
-            border: 1px solid #4b5563;
+            border: none;
             border-radius: 0.375rem;
             padding: 0.5rem;
             color: #E5E7EB;
             resize: vertical;
-            min-height: 60px;
+            min-height: 100px;
         }
         .comment-input:focus {
             outline: none;
@@ -190,7 +190,7 @@
             background-color: #4CAF50;
             color: #F1FAEE;
             padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
+            border-radius: none;
             cursor: pointer;
             transition: background-color 0.2s;
         }
@@ -202,14 +202,14 @@
             max-height: 300px;
             overflow-y: auto;
             padding: 0.5rem;
-            border-radius: 0.375rem;
+            border-radius: 0;
         }
         .comment-list.empty::after {
             content: 'Keine Kommentare vorhanden';
             display: block;
             text-align: center;
-            color: #6B7280;
-            font-size: 0.875rem;
+            color: #374151;
+            font-size: 1rem;
             padding: 1rem;
         }
         .comment-list::-webkit-scrollbar {
@@ -247,7 +247,7 @@
         }
         .comment-item .comment-date {
             font-size: 0.75rem;
-            color: #9CA3AF;
+            color: #9ca3af;
         }
         .comment-error {
             display: flex;
@@ -274,10 +274,10 @@
         .comment-error-close:hover {
             color: #DC2626;
         }
-        .has-comments::after {
+        .icons-wrapper.has-comments::after {
             content: '💬';
             display: inline-block;
-            margin-left: 0.5rem;
+            margin-right: 0.5rem;
             font-size: 0.875rem;
             color: #4CAF50;
         }
@@ -288,16 +288,20 @@
         .favorite-icon:hover {
             color: #45a049;
         }
+        .favorite-icon.favorited {
+            color: #4CAF50;
+            fill: #4CAF50;
+        }
         @media (max-width: 640px) {
             .details-panel {
                 width: 100%;
-                top: 7rem;
-                height: calc(100vh - 7rem);
+                top: 0.25rem;
+                height: calc(100vh - 0.75rem);
             }
-            .details-panel .content {
-                font-size: 1rem;
+            .content {
+                padding: 0.75rem;
             }
-            .details-panel .image-placeholder {
+            .image-placeholder {
                 height: 100px;
             }
         }
@@ -309,7 +313,7 @@
     <header class="bg-gray-800 shadow-md py-4 px-6 flex justify-between items-center">
         <div class="flex items-center space-x-4">
             <img src="{% static 'images/logo.jpg' %}" alt="Logo" class="h-20 mx-2">
-            <nav class="flex items-center space-x-4 ml-4 text-lg">
+            <nav class="flex space-x-4 ml-4 text-lg">
                 <a href="{% url 'core:index' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Home</a>
                 <a href="{% url 'core:catalog' %}" class="text-[#F1FAEE] hover:text-[#4CAF50] font-semibold">Katalog</a>
                 <a href="{% url 'core:upload_page' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Upload</a>
@@ -321,9 +325,7 @@
                 <div class="dropdown relative">
                     <button onclick="toggleDropdown(event)" class="text-[#F1FAEE] hover:text-[#4CAF50] flex items-center focus:outline-none">
                         👤 <span class="ml-1">{{ user.username }}</span>
-                        <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                        </svg>
+                        <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     <div class="dropdown-content bg-gray-700 rounded shadow-lg">
                         <a href="{% url 'core:settings' %}" class="block px-4 py-2 hover:bg-gray-600">Einstellungen</a>
@@ -350,14 +352,24 @@
                 <h2 class="text-xl font-semibold mt-8">{{ cat }}</h2>
                 <ul class="mt-2 space-y-1">
                     {% for comp in comps %}
-                        <li class="bg-gray-800 shadow-md rounded-lg p-2 cursor-pointer hover:bg-gray-700 component-item"
+                        <li class="bg-gray-800 shadow-md rounded-lg p-2 cursor-pointer hover:bg-gray-700 component-item flex items-center"
                             data-json-path="{% static comp.global_id|add:'.json' %}"
                             data-name="{{ comp.name }}"
                             data-global-id="{{ comp.global_id }}"
-                            data-has-comments="false">
-                            {{ comp.name }} ({{ comp.global_id }})
-                            
-                            
+                            data-has-comments="false"
+                            data-is-favorite="{% if comp.global_id in favorite_global_ids %}true{% else %}false{% endif %}">
+                            <span class="flex-grow">{{ comp.name }} ({{ comp.global_id }})</span>
+                            <div class="icons-wrapper flex items-center" data-global-id="{{ comp.global_id }}">
+                                <svg class="favorite-icon w-5 h-5 {% if comp.global_id in favorite_global_ids %}favorited fill-current{% else %}fill-none{% endif %}"
+                                     data-global-id="{{ comp.global_id }}"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     viewBox="0 0 24 24"
+                                     xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l2.286 7.028h7.397c.969 0 1.371 1.24.588 1.81l-5.984 4.347 2.286 7.028c.3.921-.755 1.688-1.538 1.118l-5.984-4.347-5.984 4.347c-.783.57-1.838-.197-1.538-1.118l2.286-7.028-5.984-4.347c-.783-.57-.381-1.81.588-1.81h7.397l2.286-7.028z"></path>
+                                </svg>
+                            </div>
                         </li>
                     {% endfor %}
                 </ul>
@@ -529,10 +541,10 @@
                         commentList.appendChild(div);
                     });
                 }
-                const item = document.querySelector(`.component-item[data-global-id="${globalId}"]`);
-                if (item) {
-                    item.dataset.hasComments = comments.length > 0;
-                    item.classList.toggle('has-comments', comments.length > 0);
+                const iconsWrapper = document.querySelector(`.icons-wrapper[data-global-id="${globalId}"]`);
+                if (iconsWrapper) {
+                    iconsWrapper.dataset.hasComments = comments.length > 0;
+                    iconsWrapper.classList.toggle('has-comments', comments.length > 0);
                 }
             } catch (error) {
                 console.error('Error loading comments:', error);
@@ -626,8 +638,7 @@
                     throw new Error(errorData.error || 'Failed to toggle favorite');
                 }
                 const data = await response.json();
-                favoriteIcon.classList.toggle('text-[#4CAF50]', data.is_favorite);
-                favoriteIcon.classList.toggle('text-[#6B7280]', !data.is_favorite);
+                favoriteIcon.classList.toggle('favorited', data.is_favorite);
                 favoriteIcon.classList.toggle('fill-current', data.is_favorite);
                 favoriteIcon.classList.toggle('fill-none', !data.is_favorite);
                 item.dataset.isFavorite = data.is_favorite;
@@ -693,7 +704,6 @@
                     globalIdEl.textContent = data.GlobalId?.value || globalId || 'N/A';
                     globalIdEl.classList.toggle('na', !(data.GlobalId?.value || globalId));
 
-                    // Añadir project_name y uploaded_at
                     const projectEl = document.getElementById('element-project');
                     {% for comp in components %}
                         {% if comp.global_id == globalId %}
@@ -762,8 +772,11 @@
                 const response = await fetch(`${commentsUrlBase}?global_id=${globalId}`);
                 if (response.ok) {
                     const comments = await response.json();
-                    item.dataset.hasComments = comments.length > 0;
-                    item.classList.toggle('has-comments', comments.length > 0);
+                    const iconsWrapper = document.querySelector(`.icons-wrapper[data-global-id="${globalId}"]`);
+                    if (iconsWrapper) {
+                        iconsWrapper.dataset.hasComments = comments.length > 0;
+                        iconsWrapper.classList.toggle('has-comments', comments.length > 0);
+                    }
                 }
             } catch (error) {
                 console.error('Error checking comments:', error);

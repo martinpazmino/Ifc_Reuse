@@ -45,7 +45,7 @@ def edit_profile(request):
         return redirect('accounts:profile')
     return render(request, 'accounts/edit_profile.html', {
         'user': request.user,
-        'favorites': request.user.favorites.all() if request.user.is_authenticated else []
+        'favorites': request.user.favorites.select_related('component__ifc_file').all()
     })
 
 def upload_profile_image(request):

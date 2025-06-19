@@ -32,7 +32,18 @@ def categories(request):
             'global_id': component.global_id or component.json_file_path.split('/')[-1].replace('.json', '')
         }
         categories.setdefault(cat, []).append(info)
-    return render(request, 'reuse/catalog.html', {'categories': categories, 'components': components})
+
+    favorite_global_ids = set()
+    if request.user.is_authenticated:
+        favorite_global_ids = set(
+            Favorite.objects.filter(user=request.user).values_list('component__global_id', flat=True)
+        )
+
+    return render(request, 'reuse/catalog.html', {
+        'categories': categories,
+        'components': components,
+        'favorite_global_ids': favorite_global_ids
+    })
 
 def catalog_api(request):
     components = ReusableComponent.objects.select_related('ifc_file').all()
