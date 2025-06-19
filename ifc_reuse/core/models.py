@@ -1,6 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+def ifc_file_path(instance, filename):
+    return f'ifc_files/user_{instance.user.id if instance.user else "anonymous"}/{filename}'
+
 class UploadedIFC(models.Model):
     name = models.CharField(max_length=256)
     file = models.FileField(upload_to='ifc_files/')
@@ -33,3 +36,14 @@ class ComponentComment(models.Model):
 
     def __str__(self):
         return f"Comment by {self.author} on {self.global_id}"
+
+class Favorite(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='favorites')
+    component = models.ForeignKey(ReusableComponent, on_delete=models.CASCADE, related_name='favorited_by')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'component')
+
+    def __str__(self):
+        return f"{self.user.username} favorites {self.component.global_id}"

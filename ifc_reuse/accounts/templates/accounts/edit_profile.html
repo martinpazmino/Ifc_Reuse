@@ -105,36 +105,48 @@
                     <p class="text-center text-red-400 mb-6">{{ error }}</p>
                 {% endif %}
 
-                <!-- Projects -->
-                {% if projects %}
+                <!-- Uploaded IFC Files -->
+                {% if user.uploaded_ifcs.all %}
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {% for project in projects %}
+                        {% for ifc in user.uploaded_ifcs.all %}
                             <div class="bg-gray-800 shadow-md rounded-xl p-6 hover:shadow-lg transition">
-                                <h3 class="text-xl font-semibold text-[#F1FAEE] mb-4">{{ project.name }}</h3>
+                                <h3 class="text-xl font-semibold text-[#F1FAEE] mb-4">{{ ifc.project_name|default:ifc.name }}</h3>
                                 <ul class="space-y-2">
-                                    {% for component in project.components %}
+                                    <li class="text-gray-400">Hochgeladen am: {{ ifc.uploaded_at|date:'d.m.Y' }}</li>
+                                    <li class="text-gray-400">Standort: {{ ifc.location|default:'N/A' }}</li>
+                                    {% if ifc.components.all %}
                                         <li class="text-gray-400">
-                                            {{ component.name }} <span class="text-[#4CAF50]">({{ component.type }})</span>
+                                            Komponenten:
+                                            <ul class="ml-4 list-disc">
+                                                {% for component in ifc.components.all %}
+                                                    <li>{{ component.component_type }} <span class="text-[#4CAF50]">({{ component.global_id }})</span></li>
+                                                {% endfor %}
+                                            </ul>
                                         </li>
-                                    {% endfor %}
+                                    {% else %}
+                                        <li class="text-gray-400">Keine Komponenten verfügbar.</li>
+                                    {% endif %}
                                 </ul>
+                                <a href="{% url 'core:viewer_page' ifc.id %}" class="mt-4 inline-block text-[#4CAF50] hover:underline">Ansehen</a>
                             </div>
                         {% endfor %}
                     </div>
                 {% else %}
-                    <p class="text-center text-gray-400">Keine Projekte verfügbar.</p>
+                    <p class="text-center text-gray-400">Keine hochgeladenen Inhalte verfügbar.</p>
                 {% endif %}
             </div>
 
             <!-- Gespeicherte Inhalte -->
             <div id="saved-content" class="hidden">
-                {% if user_saved %}
+                {% if user.favorites.all %}
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {% for saved in user_saved %}
+                        {% for favorite in user.favorites.all %}
                             <div class="bg-gray-700 rounded-xl p-4 shadow-md">
-                                <h4 class="text-lg font-semibold">{{ saved.name }}</h4>
-                                <p class="text-gray-400">Typ: {{ saved.type }}</p>
-                                <p class="text-gray-400">Gespeichert: {{ saved.saved_date|date:'d.m.Y' }}</p>
+                                <h4 class="text-lg font-semibold">{{ favorite.component.material_name|default:favorite.component.component_type }}</h4>
+                                <p class="text-gray-400">Typ: {{ favorite.component.component_type }}</p>
+                                <p class="text-gray-400">Global ID: {{ favorite.component.global_id }}</p>
+                                <p class="text-gray-400">Gespeichert: {{ favorite.created_at|date:'d.m.Y' }}</p>
+                                <a href="{% url 'core:catalog' %}#{{ favorite.component.global_id }}" class="mt-2 inline-block text-[#4CAF50] hover:underline">Zum Katalog</a>
                             </div>
                         {% endfor %}
                     </div>

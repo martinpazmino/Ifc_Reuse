@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kategorien - IFC Reuse</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Heroicons CDN -->
+    <script src="https://unpkg.com/@heroicons/vue@2.0.13/dist/heroicons.js"></script>
     <style>
         .dropdown-content {
             display: none;
@@ -13,7 +15,7 @@
             right: 0;
             background-color: #374151; /* bg-gray-700 */
             min-width: 150px;
-            z-index: 30; /* Aumentado para estar por encima del panel lateral */
+            z-index: 30;
             border-radius: 0.375rem;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
@@ -30,12 +32,11 @@
         .modal-bg {
             background: rgba(0, 0, 0, 0.7);
         }
-        /* Estilos para el panel lateral */
         .details-panel {
             position: fixed;
             right: 0;
-            top: 7rem; /* Estimación inicial: altura aproximada del header */
-            width: 45vw; /* Cambiado a casi la mitad del ancho */
+            top: 7rem;
+            width: 45vw;
             height: calc(100vh - 7rem);
             background-color: #1f2937;
             border-left: 1px solid #4b5563;
@@ -126,7 +127,6 @@
             color: #F1FAEE;
             background-color: #374151;
         }
-        /* Placeholder para imagen */
         .details-panel .image-placeholder {
             width: 100%;
             height: 120px;
@@ -139,16 +139,13 @@
             font-size: 0.875rem;
             margin-bottom: 1rem;
         }
-        /* Estilo para el elemento seleccionado */
         .component-item.selected {
             background-color: #374151 !important;
             border-left: 4px solid #4CAF50;
         }
-        /* Alternar fondo en la lista */
         .component-item:nth-child(even) {
             background-color: #2d3748;
         }
-        /* Estilo de la barra de scroll */
         .details-panel .content::-webkit-scrollbar {
             width: 6px;
         }
@@ -162,7 +159,6 @@
         .details-panel .content::-webkit-scrollbar-thumb:hover {
             background: #6B7280;
         }
-        /* Estilo para el área de comentarios */
         .comments-section {
             margin-top: 1.5rem;
             padding: 1rem;
@@ -203,7 +199,7 @@
         }
         .comment-list {
             margin-top: 1rem;
-            max-height: 300px; /* Aumentado para más comentarios */
+            max-height: 300px;
             overflow-y: auto;
             padding: 0.5rem;
             border-radius: 0.375rem;
@@ -253,7 +249,6 @@
             font-size: 0.75rem;
             color: #9CA3AF;
         }
-        /* Estilo para mensajes de error */
         .comment-error {
             display: flex;
             justify-content: space-between;
@@ -279,7 +274,6 @@
         .comment-error-close:hover {
             color: #DC2626;
         }
-        /* Ícono de comentario en el catálogo */
         .has-comments::after {
             content: '💬';
             display: inline-block;
@@ -287,7 +281,13 @@
             font-size: 0.875rem;
             color: #4CAF50;
         }
-        /* Responsive */
+        .favorite-icon {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .favorite-icon:hover {
+            color: #45a049;
+        }
         @media (max-width: 640px) {
             .details-panel {
                 width: 100%;
@@ -311,7 +311,7 @@
             <img src="{% static 'images/logo.jpg' %}" alt="Logo" class="h-20 mx-2">
             <nav class="flex items-center space-x-4 ml-4 text-lg">
                 <a href="{% url 'core:index' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Home</a>
-                <a href="{% url 'core:catalog' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Katalog</a>
+                <a href="{% url 'core:catalog' %}" class="text-[#F1FAEE] hover:text-[#4CAF50] font-semibold">Katalog</a>
                 <a href="{% url 'core:upload_page' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Upload</a>
                 <a href="{% url 'core:about' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Über Uns</a>
             </nav>
@@ -338,6 +338,13 @@
     </header>
     <main class="container mx-auto px-6 py-12 flex-grow">
         <h1 class="text-2xl font-bold text-center mb-6">Bauteil-Kategorien</h1>
+        {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                    <p class="text-center text-{% if message.tags == 'error' %}red-400{% else %}green-400{% endif %}">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
         {% if categories %}
             {% for cat, comps in categories.items %}
                 <h2 class="text-xl font-semibold mt-8">{{ cat }}</h2>
@@ -349,6 +356,8 @@
                             data-global-id="{{ comp.global_id }}"
                             data-has-comments="false">
                             {{ comp.name }} ({{ comp.global_id }})
+                            
+                            
                         </li>
                     {% endfor %}
                 </ul>
@@ -382,6 +391,12 @@
                 <div class="property">
                     <strong>Globale ID:</strong> <span id="element-global-id" class="na">N/A</span>
                 </div>
+                <div class="property">
+                    <strong>Projekt:</strong> <span id="element-project" class="na">N/A</span>
+                </div>
+                <div class="property">
+                    <strong>Hochgeladen:</strong> <span id="element-uploaded" class="na">N/A</span>
+                </div>
                 <div id="element-other-data" class="mt-4"></div>
                 <!-- Sección de comentarios -->
                 <div class="comments-section">
@@ -389,7 +404,6 @@
                     <textarea id="comment-input" class="comment-input" placeholder="Füge einen Kommentar hinzu..."></textarea>
                     <button id="comment-submit" class="comment-submit">Kommentar absenden</button>
                     <div id="comment-list" class="comment-list"></div>
-                    <!-- Botón para el perfil del autor -->
                     <a id="author-profile-button" href="#" class="block mt-4 bg-[#4CAF50] text-[#F1FAEE] text-center py-2 px-4 rounded-lg hover:bg-[#45a049] transition-colors hidden">Zum Profil des Autors</a>
                 </div>
             </div>
@@ -429,13 +443,23 @@
             </div>
         </div>
     </main>
+    <footer class="bg-gray-800 text-[#F1FAEE] py-2 mt-auto">
+        <div class="container mx-auto px-4 text-center">
+            <h3 class="text-lg font-bold mb-2">Kontakt</h3>
+            <div class="space-y-1 text-sm">
+                <p>E-Mail: <a href="mailto:kontakt@ifc-reuse.com" class="text-[#4CAF50] hover:underline">kontakt@ifc-reuse.com</a></p>
+                <p>Adresse: An d. Hochschule 1, 86161 Augsburg</p>
+                <p>Telefon: 0821 55860</p>
+                <p>Öffnungszeiten: Montag bis Freitag 9:00–17:00</p>
+            </div>
+            <p class="text-xs text-gray-400 mt-2">© 2025 IFC Reuse Platform. Alle Rechte vorbehalten.</p>
+        </div>
+    </footer>
     <script>
-        // Definir las URLs en variables globales usando Django
         const commentsUrlBase = "{% url 'core:get_comments' %}";
         const addCommentUrl = "{% url 'core:add_comment' %}";
-        console.log('addCommentUrl:', addCommentUrl);
+        const toggleFavoriteUrl = "{% url 'core:toggle_favorite' %}";
 
-        // Ajustar la posición y altura del panel según el header
         window.adjustPanelPosition = function() {
             const header = document.querySelector('header');
             const panel = document.getElementById('details-panel');
@@ -446,18 +470,15 @@
             }
         };
 
-        // Ejecutar al cargar la página y al redimensionar
         window.addEventListener('load', window.adjustPanelPosition);
         window.addEventListener('resize', window.adjustPanelPosition);
 
-        // Función para el dropdown
         window.toggleDropdown = function(event) {
             event.stopPropagation();
             const dropdown = event.currentTarget.closest('.dropdown');
             dropdown.classList.toggle('active');
         };
 
-        // Manejador de eventos de clic
         document.addEventListener('click', function(e) {
             if (e.target && e.target.id === 'login-btn') {
                 document.getElementById('modal-overlay').classList.remove('hidden');
@@ -485,7 +506,6 @@
             document.querySelectorAll('.component-item').forEach(item => item.classList.remove('selected'));
         }
 
-        // Función para cargar comentarios
         async function loadComments(globalId) {
             try {
                 const response = await fetch(`${commentsUrlBase}?global_id=${globalId}`);
@@ -497,7 +517,6 @@
                     commentList.classList.add('empty');
                 } else {
                     commentList.classList.remove('empty');
-                    // Ordenar por fecha descendente
                     comments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                     comments.forEach(comment => {
                         const div = document.createElement('div');
@@ -510,7 +529,6 @@
                         commentList.appendChild(div);
                     });
                 }
-                // Actualizar el ícono de comentarios en el catálogo
                 const item = document.querySelector(`.component-item[data-global-id="${globalId}"]`);
                 if (item) {
                     item.dataset.hasComments = comments.length > 0;
@@ -521,11 +539,9 @@
             }
         }
 
-        // Función para enviar comentario
         async function submitComment(globalId) {
             const commentInput = document.getElementById('comment-input');
             const text = commentInput.value.trim();
-            // Eliminar mensajes de error previos
             const existingError = document.getElementById('comment-error');
             if (existingError) existingError.remove();
 
@@ -576,11 +592,67 @@
             }
         }
 
+        async function toggleFavorite(globalId) {
+            const favoriteIcon = document.querySelector(`.favorite-icon[data-global-id="${globalId}"]`);
+            const item = document.querySelector(`.component-item[data-global-id="${globalId}"]`);
+            const existingError = document.getElementById('favorite-error');
+            if (existingError) existingError.remove();
+
+            try {
+                const response = await fetch(toggleFavoriteUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({ global_id: globalId })
+                });
+                if (response.status === 401) {
+                    document.getElementById('modal-overlay').classList.remove('hidden');
+                    document.getElementById('login-form').classList.remove('hidden');
+                    document.getElementById('register-form').classList.add('hidden');
+                    const errorDiv = document.createElement('div');
+                    errorDiv.id = 'favorite-error';
+                    errorDiv.className = 'comment-error';
+                    errorDiv.innerHTML = `
+                        <span class="comment-error-text">Bitte loggen Sie sich ein, um Favoriten zu speichern.</span>
+                        <button class="comment-error-close" onclick="this.parentElement.remove()">×</button>
+                    `;
+                    favoriteIcon.parentElement.appendChild(errorDiv);
+                    return;
+                }
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to toggle favorite');
+                }
+                const data = await response.json();
+                favoriteIcon.classList.toggle('text-[#4CAF50]', data.is_favorite);
+                favoriteIcon.classList.toggle('text-[#6B7280]', !data.is_favorite);
+                favoriteIcon.classList.toggle('fill-current', data.is_favorite);
+                favoriteIcon.classList.toggle('fill-none', !data.is_favorite);
+                item.dataset.isFavorite = data.is_favorite;
+            } catch (error) {
+                console.error('Error toggling favorite:', error);
+                const errorDiv = document.createElement('div');
+                errorDiv.id = 'favorite-error';
+                errorDiv.className = 'comment-error';
+                errorDiv.innerHTML = `
+                    <span class="comment-error-text">${error.message || 'Favorit konnte nicht gespeichert werden.'}</span>
+                    <button class="comment-error-close" onclick="this.parentElement.remove()">×</button>
+                `;
+                favoriteIcon.parentElement.appendChild(errorDiv);
+            }
+        }
+
         document.querySelectorAll('.component-item').forEach(item => {
-            item.addEventListener('click', async () => {
-                // Remover selección previa
+            item.addEventListener('click', async (e) => {
+                if (e.target.closest('.favorite-icon')) {
+                    const globalId = e.target.closest('.favorite-icon').dataset.globalId;
+                    await toggleFavorite(globalId);
+                    return;
+                }
+
                 document.querySelectorAll('.component-item').forEach(i => i.classList.remove('selected'));
-                // Marcar el elemento actual como seleccionado
                 item.classList.add('selected');
 
                 const jsonPath = `/media/reusable_components/${item.dataset.globalId}.json`;
@@ -594,7 +666,6 @@
                     }
                     const data = await response.json();
 
-                    // Actualizar el panel con los datos del JSON
                     const typeEl = document.getElementById('element-type');
                     typeEl.textContent = data.type || 'N/A';
                     typeEl.classList.toggle('na', !data.type);
@@ -622,10 +693,20 @@
                     globalIdEl.textContent = data.GlobalId?.value || globalId || 'N/A';
                     globalIdEl.classList.toggle('na', !(data.GlobalId?.value || globalId));
 
-                    // Actualizar el nombre
+                    // Añadir project_name y uploaded_at
+                    const projectEl = document.getElementById('element-project');
+                    {% for comp in components %}
+                        {% if comp.global_id == globalId %}
+                            projectEl.textContent = '{{ comp.ifc_file.project_name|default:"N/A" }}';
+                            projectEl.classList.toggle('na', !'{{ comp.ifc_file.project_name }}');
+                    const uploadedEl = document.getElementById('element-uploaded');
+                    uploadedEl.textContent = '{{ comp.uploaded_at|date:"d.m.Y" }}' || 'N/A';
+                    uploadedEl.classList.toggle('na', !'{{ comp.uploaded_at }}');
+                        {% endif %}
+                    {% endfor %}
+
                     document.getElementById('element-name').textContent = data.Name?.value || name || 'N/A';
 
-                    // Otros datos relevantes
                     const otherDataContainer = document.getElementById('element-other-data');
                     otherDataContainer.innerHTML = '';
                     const otherFields = ['PredefinedType', 'Tag'];
@@ -638,14 +719,11 @@
                         }
                     }
 
-                    // Cargar comentarios
                     await loadComments(globalId);
 
-                    // Configurar el botón de enviar comentario
                     const commentSubmit = document.getElementById('comment-submit');
                     commentSubmit.onclick = () => submitComment(globalId);
 
-                    // Obtener el autor del componente
                     const authorResponse = await fetch(`/api/component-author/?global_id=${globalId}`);
                     const profileButton = document.getElementById('author-profile-button');
                     if (authorResponse.ok) {
@@ -657,7 +735,6 @@
                         profileButton.classList.add('hidden');
                     }
 
-                    // Mostrar el panel
                     document.getElementById('details-panel').classList.add('show');
                 } catch (error) {
                     console.error('Error fetching component details:', error);
@@ -679,7 +756,6 @@
             });
         });
 
-        // Cargar íconos de comentarios al iniciar
         document.querySelectorAll('.component-item').forEach(async item => {
             const globalId = item.dataset.globalId;
             try {

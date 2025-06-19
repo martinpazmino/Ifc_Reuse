@@ -149,13 +149,19 @@ def save_metadata_and_create_component(
 
     # 6. Save to database if everything is in place
     if upload:
-        ReusableComponent.objects.create(
-            ifc_file=upload,
-            component_type=info.get("type", "Unknown"),
-            storey=info.get("storey"),
-            material_name=info.get("material"),
-            json_file_path=json_path,
-            global_id=global_id  # Añadir global_id
-        )
+            materials = metadata.get("materials")
+            if isinstance(materials, list) and materials:
+                material = materials[0].get("name", "xxx")
+            else:
+                material = "xxx"
+            ReusableComponent.objects.create(
+            ifc_file = upload,
+            component_type = metadata.get("type", "Unknown"),
+            storey = info.get("storey"),
+            material_name = material,
+            json_file_path = json_path,
+            global_id = global_id,
+    )
+        
 
     return json_path

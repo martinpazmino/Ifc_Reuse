@@ -20,4 +20,5 @@ urlpatterns = [
     path('comments/', views.get_comments, name='get_comments'),
     path('add-comment/', views.add_comment, name='add_comment'),
     path('api/component-author/', views.get_component_author, name='get_component_author'),
+    path('api/toggle-favorite/', views.toggle_favorite, name='toggle_favorite'),
 ]
