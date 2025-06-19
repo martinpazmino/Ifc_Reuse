@@ -144,7 +144,10 @@ def save_metadata_and_create_component(
         except UploadedIFC.DoesNotExist:
             pass
 
-    # 5. Save to database if everything is in place
+    # 5. Extract global_id from metadata or filename
+    global_id = metadata.get("GlobalId", {}).get("value") or filename.replace(".json", "")
+
+    # 6. Save to database if everything is in place
     if upload:
         ReusableComponent.objects.create(
             ifc_file=upload,
@@ -152,7 +155,7 @@ def save_metadata_and_create_component(
             storey=info.get("storey"),
             material_name=info.get("material"),
             json_file_path=json_path,
+            global_id=global_id  # Añadir global_id
         )
 
     return json_path
-

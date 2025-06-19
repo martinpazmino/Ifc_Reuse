@@ -1,23 +1,20 @@
-
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_GET, require_POST
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
-from .models import ReusableComponent, UploadedIFC
-from django.views.decorators.http import require_GET
-from django.views.decorators.http import require_POST
 from django.conf import settings
-from .utils import get_element_info, save_metadata_and_create_component
-import json
-import os
-from typing import Dict, Optional
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
-
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.db import IntegrityError
+from .models import ReusableComponent, UploadedIFC, ComponentComment
+from .utils import get_element_info, save_metadata_and_create_component
+
+import json
+import os
+from typing import Dict, Optional
 
 
 def index(request):
@@ -29,69 +26,28 @@ def catalog(request):
 
 
 def categories(request):
-    comp_dir = os.path.join(settings.MEDIA_ROOT, "reusable_components")
+    components = ReusableComponent.objects.select_related('ifc_file').all()
     categories = {}
-    if os.path.isdir(comp_dir):
-        for fname in os.listdir(comp_dir):
-            if not fname.endswith(".json"):
-                continue
-            path = os.path.join(comp_dir, fname)
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-            except Exception:
-                continue
-
-            cat = data.get("type", "Unknown")
-            name = data.get("Name")
-            if isinstance(name, dict):
-                name = name.get("value")
-            gid = data.get("GlobalId")
-            if isinstance(gid, dict):
-                gid = gid.get("value")
-
-            info = {"name": name or "Unnamed", "global_id": gid or ""}
-            categories.setdefault(cat, []).append(info)
-
-    return render(request, "reuse/catalog.html", {"categories": categories})
+    for component in components:
+        cat = component.component_type or 'Unknown'
+        info = {
+            'name': component.material_name or 'Unnamed',
+            'global_id': component.global_id or component.json_file_path.split('/')[-1].replace('.json', '')
+        }
+        categories.setdefault(cat, []).append(info)
+    return render(request, 'reuse/catalog.html', {'categories': categories})
 
 
 def catalog_api(request):
-    """Return components grouped by type as JSON.
-
-    This version reads the metadata JSON files stored under
-    ``MEDIA_ROOT/reusable_components`` instead of querying the
-    ``ReusableComponent`` model.  Each ``*.json`` file is expected to
-    contain keys like ``type``, ``Name`` and ``GlobalId``.  Components are
-    grouped by the ``type`` value.
-    """
-
-    comp_dir = os.path.join(settings.MEDIA_ROOT, "reusable_components")
+    components = ReusableComponent.objects.select_related('ifc_file').all()
     categories = {}
-
-    if os.path.isdir(comp_dir):
-        for fname in os.listdir(comp_dir):
-            if not fname.endswith(".json"):
-                continue
-            path = os.path.join(comp_dir, fname)
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-            except Exception:
-                # Skip unreadable or invalid JSON files
-                continue
-
-            cat = data.get("type", "Unknown")
-            name = data.get("Name")
-            if isinstance(name, dict):
-                name = name.get("value")
-            gid = data.get("GlobalId")
-            if isinstance(gid, dict):
-                gid = gid.get("value")
-
-            info = {"name": name or "Unnamed", "global_id": gid or ""}
-            categories.setdefault(cat, []).append(info)
-
+    for component in components:
+        cat = component.component_type or 'Unknown'
+        info = {
+            'name': component.material_name or 'Unnamed',
+            'global_id': component.global_id or component.json_file_path.split('/')[-1].replace('.json', '')
+        }
+        categories.setdefault(cat, []).append(info)
     return JsonResponse(categories)
 
 
@@ -116,7 +72,6 @@ def account_settings(request):
             new_email = request.POST.get('email')
             if new_email:
                 try:
-                    # Verificar si el correo ya está en uso
                     if User.objects.filter(email=new_email).exclude(id=request.user.id).exists():
                         messages.error(request, "Diese E-Mail-Adresse ist bereits vergeben.")
                     else:
@@ -133,7 +88,6 @@ def account_settings(request):
             new_password = request.POST.get('new_password')
             new_password_confirm = request.POST.get('new_password_confirm')
 
-            # Validar contraseña actual
             user = authenticate(username=request.user.username, password=current_password)
             if user is None:
                 messages.error(request, "Das aktuelle Passwort ist falsch.")
@@ -179,7 +133,6 @@ def ifc_files_api(request):
 
 @require_http_methods(["GET"])
 def get_element_info_view(request):
-    """Return metadata for a single IFC element and optionally save it as a reusable component."""
     model_id = request.GET.get("model_id")
     express_id = request.GET.get("express_id")
     filename = request.GET.get("filename")
@@ -203,7 +156,6 @@ def get_element_info_view(request):
     ifc_path = upload.file.path
     info = get_element_info(ifc_path, express_int)
 
-    # Optional: Save metadata as a reusable component
     if filename and metadata_param:
         try:
             metadata = json.loads(metadata_param)
@@ -217,57 +169,9 @@ def get_element_info_view(request):
         save_metadata_and_create_component(metadata, filename, model_id=model_id_int)
 
     return JsonResponse(info)
-def save_metadata_and_create_component(
-    metadata: Dict[str, object],
-    filename: str,
-    model_id: Optional[int] = None
-) -> str:
-    base_path = "reusable_components"
-    json_content = json.dumps(metadata, indent=2)
-    json_path = default_storage.save(
-        os.path.join(base_path, filename),
-        ContentFile(json_content.encode("utf-8")),
-    )
 
-    express_id = metadata.get("expressID")
-    model_uuid = metadata.get("modelUUID")
-
-    if express_id is None or not model_uuid:
-        return json_path
-
-    try:
-        express_id = int(express_id)
-    except (TypeError, ValueError):
-        return json_path
-
-    # ✅ Move this earlier
-    upload = None
-    if model_id is not None:
-        try:
-            upload = UploadedIFC.objects.get(id=model_id)
-        except UploadedIFC.DoesNotExist:
-            pass
-
-    # ✅ Now it's safe to access upload.file
-    if upload and upload.file:
-        ifc_path = upload.file.path
-        info = get_element_info(ifc_path, express_id)
-
-        # Save to DB
-        ReusableComponent.objects.create(
-            ifc_file=upload,
-            component_type=info.get("type", "Unknown"),
-            storey=info.get("storey"),
-            material_name=info.get("material"),
-            json_file_path=json_path,
-        )
-    else:
-        print("❌ UploadedIFC not found or missing .file")
-
-    return json_path
 
 @require_http_methods(["POST"])
-
 def reusable_components(request):
     components = ReusableComponent.objects.select_related("ifc_file").all().values(
         "id",
@@ -281,10 +185,9 @@ def reusable_components(request):
     )
     return JsonResponse(list(components), safe=False)
 
+
 @require_POST
 def upload_ifc(request):
-    """Handle IFC file upload and create an :class:`UploadedIFC` entry."""
-
     file = request.FILES.get("file")
     if not file:
         return JsonResponse({"error": "No file provided"}, status=400)
@@ -308,4 +211,46 @@ def upload_ifc(request):
     )
 
 
+# 🔹 COMENTARIOS: OBTENER Y AGREGAR 🔹
 
+@require_GET
+def get_comments(request):
+    global_id = request.GET.get('global_id')
+    if not global_id:
+        return JsonResponse({"error": "global_id required"}, status=400)
+
+    try:
+        component = ReusableComponent.objects.get(global_id=global_id)
+        comments = ComponentComment.objects.filter(component=component).values(
+            'author__username', 'text', 'created_at'
+        )
+        return JsonResponse(list(comments), safe=False)
+    except ReusableComponent.DoesNotExist:
+        return JsonResponse([], safe=False)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@require_POST
+#@login_required
+def add_comment(request):
+    try:
+        data = json.loads(request.body)
+        global_id = data.get('global_id')
+        text = data.get('text')
+
+        if not global_id or not text:
+            return JsonResponse({"error": "global_id and text required"}, status=400)
+
+        component = ReusableComponent.objects.get(global_id=global_id)
+        ComponentComment.objects.create(
+            component=component,
+            global_id=global_id,
+            author=request.user,
+            text=text
+        )
+        return JsonResponse({"status": "success"})
+    except ReusableComponent.DoesNotExist:
+        return JsonResponse({"error": "Component not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
