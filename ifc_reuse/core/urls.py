@@ -19,4 +19,5 @@ urlpatterns = [
     path('save-component-metadata/', views.save_metadata_and_create_component, name='save_component_metadata'),
     path('comments/', views.get_comments, name='get_comments'),
     path('add-comment/', views.add_comment, name='add_comment'),
+    path('api/component-author/', views.get_component_author, name='get_component_author'),
 ]

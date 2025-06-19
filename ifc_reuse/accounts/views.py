@@ -5,6 +5,8 @@ from .forms import UserRegistrationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import IntegrityError
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.models import User
 
 def register(request):
     if request.method == 'POST':
@@ -97,3 +99,9 @@ def settings(request):
                 return redirect('accounts:login')
 
     return render(request, 'reuse/settings.html')
+
+
+
+def public_profile(request, username):
+    user = get_object_or_404(User, username=username)
+    return render(request, 'accounts/public_profile.html', {'user': user})

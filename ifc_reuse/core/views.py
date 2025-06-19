@@ -200,6 +200,7 @@ def upload_ifc(request):
         file=file,
         project_name=project_name,
         location=location,
+        user=request.user if request.user.is_authenticated else None
     )
 
     return JsonResponse(
@@ -250,6 +251,24 @@ def add_comment(request):
             text=text
         )
         return JsonResponse({"status": "success"})
+    except ReusableComponent.DoesNotExist:
+        return JsonResponse({"error": "Component not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@require_GET
+def get_component_author(request):
+    global_id = request.GET.get('global_id')
+    if not global_id:
+        return JsonResponse({"error": "global_id required"}, status=400)
+
+    try:
+        component = ReusableComponent.objects.get(global_id=global_id)
+        if component.ifc_file.user:
+            return JsonResponse({"username": component.ifc_file.user.username})
+        else:
+            return JsonResponse({"error": "No author associated"}, status=404)
     except ReusableComponent.DoesNotExist:
         return JsonResponse({"error": "Component not found"}, status=404)
     except Exception as e:
