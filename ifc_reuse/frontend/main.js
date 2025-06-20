@@ -11,6 +11,7 @@ let propertiesManager = null;
 let highlighter = null;
 let outliner = null;
 let model = null;
+let ifcModel = null;
 let modelGroupUUID = null;
 let currentModelId = null;
 let lastSelected = null;
@@ -246,7 +247,7 @@ function initializePropertiesUI() {
                 if (typeof propertiesManager.init === 'function') {
                     await propertiesManager.init();
                 }
-                props = await propertiesManager.getItemProperties(model, expressID);
+                props = await propertiesManager.getItemProperties(ifcModel, expressID);
             } catch (err) {
                 console.warn('⚠️ Failed to retrieve properties with propertiesManager:', err);
             }
@@ -430,7 +431,13 @@ async function loadIfc() {
         const buffer = new Uint8Array(data);
         console.log('🧪 IFC file fetched, buffer size:', buffer.length);
 
-        model = await fragmentIfcLoader.load(buffer);
+        const { IfcLoader } = await import('@thatopen/components');
+        const ifcLoader = components.get(IfcLoader);
+        await ifcLoader.setup();
+        ifcModel = await ifcLoader.load(buffer);
+        const webIfcApi = ifcLoader.settings.webIfc;
+
+        model = await fragmentIfcLoader.createFragmentsFrom(ifcModel);
 
         if (!model) throw new Error('Failed to load IFC model');
         model.name = modelId;
@@ -510,6 +517,7 @@ function disposeFragments() {
     fragments.disposeGroup(modelGroupUUID);
     world.scene.three.remove(model);
     model = null;
+    ifcModel = null;
     modelGroupUUID = null;
     lastSelected = null;
     if (saveButton) saveButton.style.display = 'none';
@@ -646,7 +654,7 @@ function setupSelection() {
                         if (typeof propertiesManager.init === 'function') {
                             await propertiesManager.init();
                         }
-                        props = await propertiesManager.getItemProperties(model, expressID);
+                        props = await propertiesManager.getItemProperties(ifcModel, expressID);
                     } catch (err) {
                         console.warn('⚠️ Failed to retrieve properties with propertiesManager:', err);
                     }
