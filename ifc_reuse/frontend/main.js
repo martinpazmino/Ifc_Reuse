@@ -422,15 +422,10 @@ async function loadIfc() {
         const buffer = new Uint8Array(data);
         console.log('🧪 IFC file fetched, buffer size:', buffer.length);
 
-        model = await fragmentIfcLoader.load(buffer);
         if (!model) throw new Error('Failed to load IFC model');
         model.name = modelId;
         world.scene.three.add(model);
         console.log('✅ IFC model loaded:', model);
-
-        if (clipEdges && clipEdges.styles) {
-            setupClipStyles(model);
-        }
 
         modelGroupUUID = model.uuid;
         const group = fragments.groups.get(modelGroupUUID);
@@ -438,7 +433,12 @@ async function loadIfc() {
             console.warn('⚠️ No fragment group registered for model.uuid', modelGroupUUID);
         } else {
             console.log('✅ Fragment group loaded:', group, 'UUID:', modelGroupUUID);
-        }
+
+            if (clipEdges && clipEdges.styles) {
+                const group = fragments.groups.get(model.uuid);
+                setupClipStyles(group);
+            }
+
 
         const box = new THREE.Box3().setFromObject(model);
         console.log('🧪 Model bounding box:', box);
@@ -584,6 +584,16 @@ function setupSelection() {
 
         saveButton.onclick = async () => {
             console.log('🟩 Button clicked');
+
+            // ✅ Primero pedimos el directorio, antes de cualquier await
+            let dirHandle;
+            try {
+                dirHandle = await window.showDirectoryPicker();
+            } catch (err) {
+                console.error('❌ User cancelled directory selection or failed:', err);
+                return;  // abortar si el usuario cancela
+            }
+
             if (!lastSelected) {
                 console.warn('⚠️ No selection found');
                 return;
@@ -594,6 +604,7 @@ function setupSelection() {
                 console.warn('⚠️ Invalid selection');
                 return;
             }
+
 
             let fragmentID = fragmentList[0].id;
             let group = fragments.groups.get(fragmentID);
@@ -674,8 +685,7 @@ function setupSelection() {
                     console.warn('⚠️ fragments.exportFragments is not available. Skipping geometry export.');
                 }
 
-                const dirHandle = await window.showDirectoryPicker();
-                console.log('🗂️ Directory selected:', dirHandle.name);
+                console.log('🗂️ Directory already selected:', dirHandle.name);
 
                 let globalId = metadata.GlobalId;
                 if (globalId && typeof globalId === 'object') {
@@ -721,7 +731,6 @@ function setupSelection() {
     }
 }
 
-// Main initialization function
 async function main() {
     try {
         console.log('🚀 Starting application initialization...');
@@ -735,11 +744,10 @@ async function main() {
         await initializeIfcComponents();
         console.log('✅ IFC components initialization complete');
 
+        await initializeClippingComponents();  // <-- MOVE HERE
+
         initializePropertiesUI();
         setupLayout();
-
-        await initializeClippingComponents();
-        console.log('✅ Clipping components initialization complete');
 
         setupSelection();
         console.log('✅ Selection setup complete');
