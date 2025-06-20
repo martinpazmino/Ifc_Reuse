@@ -14,7 +14,7 @@
   "type": "module",
   "dependencies": {
     "@thatopen/components": "^2.4.11",
-    "@thatopen/components-front": "^2.4.11",
+    "@thatopen/components-front": "^2.4.12",
     "@thatopen/fragments": "^3.0.7",
     "@thatopen/ui": "^2.4.5",
     "three": "^0.175.0",
