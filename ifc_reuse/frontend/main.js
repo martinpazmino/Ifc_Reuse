@@ -351,12 +351,12 @@ async function initializeClippingComponents() {
         clipper.visible = true;
         clipper.Type = EdgesPlane;
 
-        clipEdges = new ClipEdges({
-            components: components,
-            renderer: world.renderer,
-            camera: world.camera,
-            scene: world.scene.three  // ✅ <-- this was the key
-        });
+        // ClipEdges constructor expects only the Components instance. Configure
+        // the renderer, camera and scene afterwards.
+        clipEdges = new ClipEdges(components);
+        clipEdges.renderer = world.renderer;
+        clipEdges.camera = world.camera;
+        clipEdges.scene = world.scene.three;  // renderer requires the raw THREE scene
         clipEdges.visible = true;
         clipEdges.create();
 
