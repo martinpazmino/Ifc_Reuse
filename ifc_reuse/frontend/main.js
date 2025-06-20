@@ -1,4 +1,3 @@
-// Core Three.js import (needed immediately)
 import * as THREE from 'three';
 import * as BUI from '@thatopen/ui';
 
@@ -11,21 +10,11 @@ let propertiesManager = null;
 let highlighter = null;
 let outliner = null;
 let model = null;
-let ifcModel = null;
 let modelGroupUUID = null;
 let currentModelId = null;
 let lastSelected = null;
 let saveButton = null;
-let raycaster = null;
-let clipper = null;
 let container = null;
-let clipEdges = null;
-let propertiesTable = null;
-let updatePropertiesTable = null;
-let propertiesPanel = null;
-
-
-
 
 // Wait for DOM to be ready
 function waitForDOM() {
@@ -200,214 +189,6 @@ async function initializeIfcComponents() {
     }
 }
 
-// Initialize element properties table and panel
-function initializePropertiesUI() {
-    let allRows = [];
-
-    propertiesTable = document.createElement('bim-table');
-    propertiesTable.columns = [
-        { key: 'property', label: 'Property' },
-        { key: 'value', label: 'Value' },
-    ];
-    propertiesTable.data = [];
-    propertiesTable.expanded = true;
-
-    updatePropertiesTable = async ({ fragmentIdMap }) => {
-        allRows = [];
-        propertiesTable.data = [];
-        if (!fragmentIdMap) return;
-        const entries = Object.entries(fragmentIdMap);
-        if (!entries.length) return;
-        let [fragmentID, expressSet] = entries[0];
-        const expressIDs = Array.from(expressSet);
-        if (!expressIDs.length) return;
-        const expressID = expressIDs[0];
-
-        let group = fragments.groups.get(fragmentID);
-        if (!group) {
-            const frag = fragments.list.get(fragmentID);
-            if (frag && frag.group) {
-                group = frag.group;
-                fragmentID = group.uuid;
-            } else {
-                fragmentID = modelGroupUUID;
-                group = fragments.groups.get(fragmentID);
-            }
-        }
-
-        let props = null;
-        const groupProps = group && typeof group.getLocalProperties === 'function'
-            ? group.getLocalProperties()
-            : null;
-        if (groupProps && groupProps[expressID]) {
-            props = groupProps[expressID];
-        }
-        if (!props && propertiesManager && typeof propertiesManager.getItemProperties === 'function') {
-            try {
-                if (typeof propertiesManager.init === 'function') {
-                    await propertiesManager.init();
-                }
-                props = await propertiesManager.getItemProperties(ifcModel, expressID);
-            } catch (err) {
-                console.warn('⚠️ Failed to retrieve properties with propertiesManager:', err);
-            }
-        }
-        if (!props) {
-            props = { expressID };
-        }
-        try {
-            const resp = await fetch(`/get-element-info/?model_id=${encodeURIComponent(currentModelId)}&express_id=${expressID}`);
-            if (resp.ok) {
-                const info = await resp.json();
-                if (info.type) props.type = info.type;
-                if (info.predefinedType) props.PredefinedType = info.predefinedType;
-                if (info.materials && info.materials.length) props.materials = info.materials;
-                if (info.storey) props.storey = info.storey;
-            }
-        } catch (err) {
-            console.warn('⚠️ Error fetching element info:', err);
-        }
-        allRows = Object.entries(props)
-            .filter(([, value]) => value !== undefined && value !== null)
-            .map(([property, value]) => ({ property, value }));
-        propertiesTable.data = allRows;
-    };
-
-    if (highlighter) {
-        highlighter.events.select.onHighlight.add((fragmentIdMap) => {
-            updatePropertiesTable({ fragmentIdMap });
-        });
-        highlighter.events.select.onClear.add(() => {
-            updatePropertiesTable({ fragmentIdMap: {} });
-        });
-    }
-
-    propertiesPanel = BUI.Component.create(() => {
-        const onTextInput = (e) => {
-            const input = e.target;
-            const query = input.value.trim().toLowerCase();
-            if (query === '') {
-                propertiesTable.data = allRows;
-                return;
-            }
-            propertiesTable.data = allRows.filter((r) =>
-                String(r.property).toLowerCase().includes(query) ||
-                String(r.value).toLowerCase().includes(query)
-            );
-        };
-
-        const expandTable = (e) => {
-            const button = e.target;
-            propertiesTable.expanded = !propertiesTable.expanded;
-            button.label = propertiesTable.expanded ? 'Collapse' : 'Expand';
-        };
-
-        const copyAsTSV = async () => {
-            const lines = allRows.map((r) => `${r.property}\t${r.value}`);
-            const tsv = `Property\tValue\n${lines.join('\n')}`;
-            await navigator.clipboard.writeText(tsv);
-        };
-
-        return BUI.html`
-            <bim-panel label="Properties">
-              <bim-panel-section label="Element Data">
-                <div style="display: flex; gap: 0.5rem;">
-                  <bim-button @click=${expandTable} label=${propertiesTable.expanded ? 'Collapse' : 'Expand'}></bim-button>
-                  <bim-button @click=${copyAsTSV} label="Copy as TSV"></bim-button>
-                </div>
-                <bim-text-input @input=${onTextInput} placeholder="Search Property" debounce="250"></bim-text-input>
-                ${propertiesTable}
-              </bim-panel-section>
-            </bim-panel>
-        `;
-    });
-}
-
-function setupLayout() {
-    const viewport = container;
-    const app = document.createElement('bim-grid');
-    app.layouts = {
-        main: {
-            template: `\n            "propertiesPanel viewport"\n            /25rem 1fr\n            `,
-            elements: { propertiesPanel, viewport },
-        },
-    };
-    app.layout = 'main';
-    const parent = container?.parentElement || document.body;
-    parent.innerHTML = '';
-    parent.appendChild(app);
-}
-
-// Initialize clipping components
-async function initializeClippingComponents() {
-    try {
-        const { Raycasters, Clipper } = await import('@thatopen/components');
-        const { ClipEdges, EdgesPlane } = await import('@thatopen/components-front');
-
-        const casterManager = components.get(Raycasters);
-        raycaster = casterManager.get(world);
-
-        clipper = components.get(Clipper);
-        clipper.enabled = true;
-        clipper.visible = true;
-        clipper.Type = EdgesPlane;
-
-        clipEdges = new ClipEdges({
-            components: components,
-            renderer: world.renderer,
-            camera: world.camera,
-            scene: world.scene.three  // ✅ <-- this was the key
-        });
-        clipEdges.visible = true;
-        clipEdges.create();
-
-        if (container) {
-            container.ondblclick = () => {
-                if (clipper.enabled) {
-                    clipper.create(world);
-                }
-            };
-        }
-
-        window.addEventListener('keydown', (event) => {
-            if (event.code === 'Delete' || event.code === 'Backspace') {
-                if (clipper.enabled) {
-                    clipper.delete(world);
-                }
-            }
-        });
-
-        console.log('✅ Clipping components initialized');
-    } catch (err) {
-        console.error('❌ Error initializing clipping components:', err);
-    }
-}
-
-
-// Create clipping styles for a given model
-function setupClipStyles(group) {
-    if (!clipEdges || !clipEdges.styles) return;
-
-    const fill = new THREE.MeshBasicMaterial({ color: 'lightblue', side: 2 });
-    const line = new THREE.LineBasicMaterial({ color: 'blue' });
-    const outline = new THREE.MeshBasicMaterial({ color: 'blue', opacity: 0.5, side: 2, transparent: true });
-
-    const meshes = new Set();
-    group.traverse((child) => {
-        if (child.isMesh) {
-            meshes.add(child);
-        }
-    });
-
-    if (!clipEdges.styles.list['Default']) {
-        clipEdges.styles.create('Default', meshes, world, line, fill, outline);
-    } else {
-        clipEdges.styles.list['Default'].meshes = meshes;
-    }
-
-
-}
-
 // Load IFC model
 async function loadIfc() {
     console.log('⏳ Loading IFC...');
@@ -431,13 +212,7 @@ async function loadIfc() {
         const buffer = new Uint8Array(data);
         console.log('🧪 IFC file fetched, buffer size:', buffer.length);
 
-        const { IfcLoader } = await import('@thatopen/components');
-        const ifcLoader = components.get(IfcLoader);
-        await ifcLoader.setup();
-        ifcModel = await ifcLoader.load(buffer);
-        const webIfcApi = ifcLoader.settings.webIfc;
-
-        model = await fragmentIfcLoader.createFragmentsFrom(ifcModel);
+        model = await fragmentIfcLoader.load(buffer);
 
         if (!model) throw new Error('Failed to load IFC model');
         model.name = modelId;
@@ -450,11 +225,6 @@ async function loadIfc() {
             console.warn('⚠️ No fragment group registered for model.uuid', modelGroupUUID);
         } else {
             console.log('✅ Fragment group loaded:', group, 'UUID:', modelGroupUUID);
-
-            if (clipEdges && clipEdges.styles) {
-                const group = fragments.groups.get(model.uuid);
-                setupClipStyles(group);
-            }
         }
 
         const box = new THREE.Box3().setFromObject(model);
@@ -517,7 +287,6 @@ function disposeFragments() {
     fragments.disposeGroup(modelGroupUUID);
     world.scene.three.remove(model);
     model = null;
-    ifcModel = null;
     modelGroupUUID = null;
     lastSelected = null;
     if (saveButton) saveButton.style.display = 'none';
@@ -603,13 +372,12 @@ function setupSelection() {
         saveButton.onclick = async () => {
             console.log('🟩 Button clicked');
 
-            // ✅ Primero pedimos el directorio, antes de cualquier await
             let dirHandle;
             try {
                 dirHandle = await window.showDirectoryPicker();
             } catch (err) {
                 console.error('❌ User cancelled directory selection or failed:', err);
-                return;  // abortar si el usuario cancela
+                return;
             }
 
             if (!lastSelected) {
@@ -622,7 +390,6 @@ function setupSelection() {
                 console.warn('⚠️ Invalid selection');
                 return;
             }
-
 
             let fragmentID = fragmentList[0].id;
             let group = fragments.groups.get(fragmentID);
@@ -654,7 +421,7 @@ function setupSelection() {
                         if (typeof propertiesManager.init === 'function') {
                             await propertiesManager.init();
                         }
-                        props = await propertiesManager.getItemProperties(ifcModel, expressID);
+                        props = await propertiesManager.getItemProperties(model, expressID);
                     } catch (err) {
                         console.warn('⚠️ Failed to retrieve properties with propertiesManager:', err);
                     }
@@ -720,7 +487,6 @@ function setupSelection() {
                 console.log('📤 Sending json_file_path to backend:', jsonFilePath);
 
                 try {
-
                     const url = `/get-element-info/?model_id=${encodeURIComponent(currentModelId)}&express_id=${expressID}` +
                         `&filename=${encodeURIComponent(`${nameBase}.json`)}&model_uuid=${encodeURIComponent(modelGroupUUID)}` +
                         `&metadata=${encodeURIComponent(JSON.stringify(metadata))}`;
@@ -730,8 +496,6 @@ function setupSelection() {
                         throw new Error(`HTTP ${response.status}`);
                     }
                     console.log('✅ Metadata stored on server');
-
-
                 } catch (err) {
                     console.error('❌ Failed to upload component:', err);
                 }
@@ -761,11 +525,6 @@ async function main() {
 
         await initializeIfcComponents();
         console.log('✅ IFC components initialization complete');
-
-        await initializeClippingComponents();  // <-- MOVE HERE
-
-        initializePropertiesUI();
-        setupLayout();
 
         setupSelection();
         console.log('✅ Selection setup complete');
