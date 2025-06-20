@@ -348,10 +348,17 @@ async function initializeClippingComponents() {
 
         clipper = components.get(Clipper);
         clipper.enabled = true;
-        clipper.visible = true; // show plane helper
-        clipEdges = components.get(ClipEdges);
-        clipEdges.visible = true;
+        clipper.visible = true;
         clipper.Type = EdgesPlane;
+
+        clipEdges = new ClipEdges({
+            components: components,
+            renderer: world.renderer,
+            camera: world.camera,
+            scene: world.scene.three  // ✅ <-- this was the key
+        });
+        clipEdges.visible = true;
+        clipEdges.create();
 
         if (container) {
             container.ondblclick = () => {
@@ -374,6 +381,7 @@ async function initializeClippingComponents() {
         console.error('❌ Error initializing clipping components:', err);
     }
 }
+
 
 // Create clipping styles for a given model
 function setupClipStyles(group) {
@@ -422,6 +430,8 @@ async function loadIfc() {
         const buffer = new Uint8Array(data);
         console.log('🧪 IFC file fetched, buffer size:', buffer.length);
 
+        model = await fragmentIfcLoader.load(buffer);
+
         if (!model) throw new Error('Failed to load IFC model');
         model.name = modelId;
         world.scene.three.add(model);
@@ -438,7 +448,7 @@ async function loadIfc() {
                 const group = fragments.groups.get(model.uuid);
                 setupClipStyles(group);
             }
-
+        }
 
         const box = new THREE.Box3().setFromObject(model);
         console.log('🧪 Model bounding box:', box);
