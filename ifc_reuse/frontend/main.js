@@ -149,11 +149,11 @@ async function initializeIfcComponents() {
             throw new Error('Components not initialized');
         }
 
-        const { IfcLoader, FragmentsManager, IfcPropertiesManager } = await import('@thatopen/components');
+        const { IfcImporter, FragmentsManager, IfcPropertiesManager } = await import('@thatopen/components');
         const { Highlighter, Outliner } = await import('@thatopen/components-front');
         const WEBIFC = await import('web-ifc');
 
-        fragmentIfcLoader = components.get(IfcLoader);
+        fragmentIfcLoader = components.get(IfcImporter);
         await fragmentIfcLoader.setup();
         fragmentIfcLoader.settings.webIfc.COORDINATE_TO_ORIGIN = true;
 
