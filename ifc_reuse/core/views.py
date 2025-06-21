@@ -14,6 +14,7 @@ from .utils import get_element_info, save_metadata_and_create_component
 from typing import Dict, Optional
 import json
 import os
+import subprocess
 
 def index(request):
     return render(request, "reuse/index.html")
@@ -288,3 +289,60 @@ def toggle_favorite(request):
         return JsonResponse({"error": "Component not found"}, status=404)
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+
+
+@require_POST
+def extract_fragment(request):
+    """Extract a fragment from an uploaded IFC model and store metadata."""
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    model_id = data.get("model_id")
+    express_id = data.get("express_id")
+    global_id = data.get("global_id")
+
+    if model_id is None or express_id is None or not global_id:
+        return JsonResponse({"error": "model_id, express_id and global_id required"}, status=400)
+
+    try:
+        model_id_int = int(model_id)
+        express_id_int = int(express_id)
+    except (TypeError, ValueError):
+        return JsonResponse({"error": "Invalid model_id or express_id"}, status=400)
+
+    try:
+        upload = UploadedIFC.objects.get(pk=model_id_int)
+    except UploadedIFC.DoesNotExist:
+        return JsonResponse({"error": "model not found"}, status=404)
+
+    ifc_path = upload.file.path
+
+    # 1️⃣ Metadata extraction
+    metadata = get_element_info(ifc_path, express_id_int)
+    metadata.update({
+        "expressID": express_id_int,
+        "modelUUID": str(model_id_int),
+        "GlobalId": {"value": global_id},
+    })
+
+    json_filename = f"{global_id}.json"
+    json_path = save_metadata_and_create_component(metadata, json_filename, model_id=model_id_int)
+
+    # 2️⃣ Geometry extraction via Node.js script
+    script_path = os.path.join(settings.BASE_DIR, "extract-fragment.js")
+    frag_dir = os.path.join(settings.MEDIA_ROOT, "fragments")
+    os.makedirs(frag_dir, exist_ok=True)
+    frag_path = os.path.join(frag_dir, f"{global_id}.frag")
+
+    try:
+        subprocess.run(["node", script_path, ifc_path, str(express_id_int), frag_path], check=True)
+    except Exception as e:
+        return JsonResponse({"error": f"Geometry extraction failed: {e}"}, status=500)
+
+    return JsonResponse({
+        "status": "success",
+        "json_file": json_path,
+        "fragment_file": os.path.relpath(frag_path, settings.MEDIA_ROOT),
+    })
