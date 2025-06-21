@@ -329,13 +329,17 @@ def extract_fragment(request):
     json_path = save_metadata_and_create_component(metadata, json_filename, model_id=model_id_int)
 
     # 2️⃣ Geometry extraction via Node.js script
-    script_path = os.path.join(settings.BASE_DIR, "extract-fragment.js")
-    frag_dir = os.path.join(settings.MEDIA_ROOT, "fragments")
-    os.makedirs(frag_dir, exist_ok=True)
-    frag_path = os.path.join(frag_dir, f"{global_id}.frag")
+    script_path = os.path.join(
+        settings.BASE_DIR, "core", "converters", "extract_fragment.js"
+    )
+
+    frag_path = os.path.join("/media/reusable_components", f"{global_id}.frag")
 
     try:
-        subprocess.run(["node", script_path, ifc_path, str(express_id_int), frag_path], check=True)
+        subprocess.run(
+            ["node", script_path, ifc_path, str(express_id_int), global_id],
+            check=True,
+        )
     except Exception as e:
         return JsonResponse({"error": f"Geometry extraction failed: {e}"}, status=500)
 
