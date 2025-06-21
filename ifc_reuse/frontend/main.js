@@ -372,14 +372,6 @@ function setupSelection() {
         saveButton.onclick = async () => {
             console.log('🟩 Button clicked');
 
-            let dirHandle;
-            try {
-                dirHandle = await window.showDirectoryPicker();
-            } catch (err) {
-                console.error('❌ User cancelled directory selection or failed:', err);
-                return;
-            }
-
             if (!lastSelected) {
                 console.warn('⚠️ No selection found');
                 return;
@@ -446,6 +438,12 @@ function setupSelection() {
 
                 console.log('🧠 Properties:', metadata);
 
+                let globalId = metadata.GlobalId;
+                if (globalId && typeof globalId === 'object') {
+                    globalId = globalId.value || globalId.id || globalId.GlobalId || globalId.toString();
+                }
+                const nameBase = globalId || `frag_${expressID}`;
+
                 try {
                     const resp = await fetch(`/get-element-info/?model_id=${encodeURIComponent(currentModelId)}&express_id=${expressID}`);
                     if (resp.ok) {
@@ -483,19 +481,6 @@ function setupSelection() {
                         console.error('❌ Error uploading fragment:', err);
                     }
                 }
-
-                console.log('🗂️ Directory already selected:', dirHandle.name);
-
-                let globalId = metadata.GlobalId;
-                if (globalId && typeof globalId === 'object') {
-                    globalId = globalId.value || globalId.id || globalId.GlobalId || globalId.toString();
-                }
-                const nameBase = globalId || `frag_${expressID}`;
-                const jsonFileHandle = await dirHandle.getFileHandle(`${nameBase}.json`, { create: true });
-                const jsonWritable = await jsonFileHandle.createWritable();
-                await jsonWritable.write(JSON.stringify(metadata, null, 2));
-                await jsonWritable.close();
-                console.log('✅ Metadata saved:', `${nameBase}.json`);
 
                 const jsonFilePath = `reusable_components/${nameBase}.json`;
                 console.log('📤 Sending json_file_path to backend:', jsonFilePath);

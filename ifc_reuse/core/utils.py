@@ -114,8 +114,13 @@ def save_metadata_and_create_component(
     # 1. Save JSON metadata to disk
     base_path = "reusable_components"
     json_content = json.dumps(metadata, indent=2)
+    json_file = os.path.join(base_path, filename)
+
+    if default_storage.exists(json_file):
+        default_storage.delete(json_file)
+
     json_path = default_storage.save(
-        os.path.join(base_path, filename),
+        json_file,
         ContentFile(json_content.encode("utf-8")),
     )
 
@@ -149,19 +154,18 @@ def save_metadata_and_create_component(
 
     # 6. Save to database if everything is in place
     if upload:
-            materials = metadata.get("materials")
-            if isinstance(materials, list) and materials:
-                material = materials[0].get("name", "xxx")
-            else:
-                material = "xxx"
-            ReusableComponent.objects.create(
-            ifc_file = upload,
-            component_type = metadata.get("type", "Unknown"),
-            storey = info.get("storey"),
-            material_name = material,
-            json_file_path = json_path,
-            global_id = global_id,
-    )
-        
+        materials = metadata.get("materials")
+        if isinstance(materials, list) and materials:
+            material = materials[0].get("name", "xxx")
+        else:
+            material = "xxx"
+        ReusableComponent.objects.create(
+            ifc_file=upload,
+            component_type=metadata.get("type", "Unknown"),
+            storey=info.get("storey"),
+            material_name=material,
+            json_file_path=json_path,
+            global_id=global_id,
+        )
 
     return json_path
