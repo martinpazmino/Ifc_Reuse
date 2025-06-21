@@ -268,3 +268,21 @@ def toggle_favorite(request):
         return JsonResponse({"error": "Component not found"}, status=404)
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+
+
+@require_POST
+def save_fragment(request):
+    """Save uploaded fragment file to MEDIA_ROOT/fragments/{global_id}.frag"""
+    frag_file = request.FILES.get("fragment")
+    global_id = request.POST.get("global_id")
+
+    if not frag_file or not global_id:
+        return JsonResponse({"error": "fragment and global_id required"}, status=400)
+
+    fragments_dir = os.path.join(settings.MEDIA_ROOT, "fragments")
+    os.makedirs(fragments_dir, exist_ok=True)
+
+    file_path = os.path.join(fragments_dir, f"{global_id}.frag")
+    default_storage.save(file_path, frag_file)
+
+    return JsonResponse({"status": "saved", "path": os.path.join(settings.MEDIA_URL, "fragments", f"{global_id}.frag")})
