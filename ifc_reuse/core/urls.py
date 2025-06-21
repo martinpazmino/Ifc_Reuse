@@ -21,4 +21,5 @@ urlpatterns = [
     path('add-comment/', views.add_comment, name='add_comment'),
     path('api/component-author/', views.get_component_author, name='get_component_author'),
     path('api/toggle-favorite/', views.toggle_favorite, name='toggle_favorite'),
+    path('save-fragment/', views.save_fragment, name='save_fragment'),
 ]

@@ -470,6 +470,20 @@ function setupSelection() {
                     console.warn('⚠️ fragments.exportFragments is not available. Skipping geometry export.');
                 }
 
+                if (fragData) {
+                    const formData = new FormData();
+                    formData.append('global_id', globalId || `frag_${expressID}`);
+                    formData.append('fragment', new Blob([fragData], { type: 'application/octet-stream' }), `${nameBase}.frag`);
+                    try {
+                        const resp = await fetch('/save-fragment/', { method: 'POST', body: formData });
+                        if (!resp.ok) {
+                            console.warn('⚠️ Failed to save fragment on server:', resp.statusText);
+                        }
+                    } catch (err) {
+                        console.error('❌ Error uploading fragment:', err);
+                    }
+                }
+
                 console.log('🗂️ Directory already selected:', dirHandle.name);
 
                 let globalId = metadata.GlobalId;
