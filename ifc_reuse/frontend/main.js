@@ -1,8 +1,5 @@
 import * as THREE from 'three';
-import * as OBC from '@thatopen/components';
-import { PostproductionRenderer, Highlighter, Outliner } from '@thatopen/components-front';
 import * as BUI from '@thatopen/ui';
-import * as WEBIFC from 'web-ifc';
 
 // Global variables
 let components = null;
@@ -47,7 +44,9 @@ async function initializeScene() {
     console.log('✅ Container found:', container);
 
     try {
-        const { Components, Worlds, SimpleScene, SimpleCamera } = OBC;
+        // Dynamically import @thatopen/components
+        const { Components, Worlds, SimpleScene, SimpleCamera } = await import('@thatopen/components');
+        const { PostproductionRenderer } = await import('@thatopen/components-front');
 
         components = new Components();
         console.log('✅ Components instantiated:', components);
@@ -100,7 +99,7 @@ async function initializeScene() {
     console.log('🟢 Animation loop started');
 
     try {
-        const { Grids } = OBC;
+        const { Grids } = await import('@thatopen/components');
         const grid = components.get(Grids).create(world);
         world.renderer.postproduction.customEffects.excludedMeshes.push(grid.three);
         console.log('✅ Grid added');
@@ -150,9 +149,11 @@ async function initializeIfcComponents() {
             throw new Error('Components not initialized');
         }
 
-        const { IfcImporter, FragmentsManager, IfcPropertiesManager } = OBC;
+        const { IfcLoader, FragmentsManager, IfcPropertiesManager } = await import('@thatopen/components');
+        const { Highlighter, Outliner } = await import('@thatopen/components-front');
+        const WEBIFC = await import('web-ifc');
 
-        fragmentIfcLoader = components.get(IfcImporter);
+        fragmentIfcLoader = components.get(IfcLoader);
         await fragmentIfcLoader.setup();
         fragmentIfcLoader.settings.webIfc.COORDINATE_TO_ORIGIN = true;
 

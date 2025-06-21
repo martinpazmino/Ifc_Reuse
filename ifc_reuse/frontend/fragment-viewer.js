@@ -21,7 +21,7 @@ components.init();
 world.scene.setup();
 world.camera.controls.setLookAt(12, 6, 8, 0, 0, -10);
 
-const fragmentIfcLoader = components.get(OBC.IfcImporter);
+const fragmentIfcLoader = components.get(OBC.IfcLoader);
 await fragmentIfcLoader.setup();  // Loads WASM via unpkg
 
 // Optional: exclude categories to speed up

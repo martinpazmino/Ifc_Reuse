@@ -135,28 +135,48 @@ def get_element_info_view(request):
     filename = request.GET.get("filename")
     metadata_param = request.GET.get("metadata")
     model_uuid = request.GET.get("model_uuid")
+
+    # Validate required parameters
     if not model_id or express_id is None:
         return JsonResponse({"error": "model_id and express_id required"}, status=400)
+
+    # Convert model_id and express_id to integers
     try:
         model_id_int = int(model_id)
         express_int = int(express_id)
     except (ValueError, TypeError):
         return JsonResponse({"error": "Invalid model_id or express_id"}, status=400)
+
+    # Retrieve the uploaded IFC model
     try:
         upload = UploadedIFC.objects.get(pk=model_id_int)
     except UploadedIFC.DoesNotExist:
         return JsonResponse({"error": "model not found"}, status=404)
+
     ifc_path = upload.file.path
+
+    # Extract element info from IFC
     info = get_element_info(ifc_path, express_int)
+
+    # Handle optional metadata and saving
     if filename and metadata_param:
         try:
             metadata = json.loads(metadata_param)
-        except Exception:
+        except json.JSONDecodeError:
             metadata = {}
+
+        # Ensure essential metadata fields are set
         metadata.setdefault("expressID", express_int)
         if model_uuid:
             metadata.setdefault("modelUUID", model_uuid)
+
+        # Ensure filename ends with .json
+        if not filename.endswith(".json"):
+            filename = f"{filename}.json"
+
+        # Save metadata and create component entry
         save_metadata_and_create_component(metadata, filename, model_id=model_id_int)
+
     return JsonResponse(info)
 
 @require_http_methods(["POST"])
