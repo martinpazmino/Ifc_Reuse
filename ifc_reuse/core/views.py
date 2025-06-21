@@ -2,8 +2,6 @@ from django.views.decorators.http import require_http_methods, require_GET, requ
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.conf import settings
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate
 from django.contrib import messages
@@ -11,10 +9,10 @@ from django.contrib.auth.models import User
 from django.db import IntegrityError
 from .models import ReusableComponent, UploadedIFC, ComponentComment, Favorite
 from .utils import get_element_info, save_metadata_and_create_component
-from typing import Dict, Optional
 import json
 import os
 import subprocess
+from django.views.decorators.csrf import csrf_exempt
 
 def index(request):
     return render(request, "reuse/index.html")
@@ -290,7 +288,7 @@ def toggle_favorite(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-
+@csrf_exempt
 @require_POST
 def extract_fragment(request):
     """Extract a fragment from an uploaded IFC model and store metadata."""
