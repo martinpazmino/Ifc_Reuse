@@ -21,7 +21,7 @@ components.init();
 world.scene.setup();
 world.camera.controls.setLookAt(12, 6, 8, 0, 0, -10);
 
-const fragmentIfcLoader = components.get(OBC.IfcLoader);
+const fragmentIfcLoader = components.get(OBC.FragmentIfcLoader);
 await fragmentIfcLoader.setup();  // Loads WASM via unpkg
 
 // Optional: exclude categories to speed up
@@ -41,7 +41,7 @@ async function loadIfc(url) {
   const file = await fetch(url);
   const data = await file.arrayBuffer();
   const buffer = new Uint8Array(data);
-  const model = await fragmentIfcLoader.load(buffer);
+  const model = await fragmentIfcLoader.load(buffer, "ifc-model");
   model.name = "ifc-model";
   world.scene.three.add(model);
 }
@@ -74,7 +74,7 @@ document.body.append(phoneBtn);
 // Export logic
 function exportFragments() {
   const group = Array.from(fragments.groups.values())[0];
-  const data = fragments.export(group);
+  const data = fragments.exportFragments(group);
   download(new File([new Blob([data])], "model.frag"));
 
   const props = group.getLocalProperties();

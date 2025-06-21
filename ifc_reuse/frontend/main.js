@@ -149,11 +149,11 @@ async function initializeIfcComponents() {
             throw new Error('Components not initialized');
         }
 
-        const { IfcLoader, FragmentsManager, IfcPropertiesManager } = await import('@thatopen/components');
+        const { FragmentIfcLoader, FragmentsManager, IfcPropertiesManager } = await import('@thatopen/components');
         const { Highlighter, Outliner } = await import('@thatopen/components-front');
         const WEBIFC = await import('web-ifc');
 
-        fragmentIfcLoader = components.get(IfcLoader);
+        fragmentIfcLoader = components.get(FragmentIfcLoader);
         await fragmentIfcLoader.setup();
         fragmentIfcLoader.settings.webIfc.COORDINATE_TO_ORIGIN = true;
 
@@ -212,7 +212,7 @@ async function loadIfc() {
         const buffer = new Uint8Array(data);
         console.log('🧪 IFC file fetched, buffer size:', buffer.length);
 
-        model = await fragmentIfcLoader.load(buffer);
+        model = await fragmentIfcLoader.load(buffer, modelId);
 
         if (!model) throw new Error('Failed to load IFC model');
         model.name = modelId;
