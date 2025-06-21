@@ -13,6 +13,7 @@ import json
 import os
 import subprocess
 from django.views.decorators.csrf import csrf_exempt
+from django.core.files.storage import default_storage
 
 def index(request):
     return render(request, "reuse/index.html")
@@ -347,4 +348,22 @@ def extract_fragment(request):
         "status": "success",
         "json_file": json_path,
         "fragment_file": os.path.relpath(frag_path, settings.MEDIA_ROOT),
+    })
+
+
+@csrf_exempt
+@require_POST
+def upload_fragment(request):
+    """Store a fragment file uploaded from the frontend."""
+    fragment = request.FILES.get("fragment_file")
+    global_id = request.POST.get("global_id")
+
+    if not fragment or not global_id:
+        return JsonResponse({"error": "global_id and fragment_file required"}, status=400)
+
+    path = default_storage.save(os.path.join("fragments", f"{global_id}.frag"), fragment)
+
+    return JsonResponse({
+        "status": "saved",
+        "path": default_storage.url(path),
     })

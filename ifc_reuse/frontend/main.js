@@ -372,14 +372,6 @@ function setupSelection() {
         saveButton.onclick = async () => {
             console.log('🟩 Button clicked');
 
-            let dirHandle;
-            try {
-                dirHandle = await window.showDirectoryPicker();
-            } catch (err) {
-                console.error('❌ User cancelled directory selection or failed:', err);
-                return;
-            }
-
             if (!lastSelected) {
                 console.warn('⚠️ No selection found');
                 return;
@@ -461,46 +453,45 @@ function setupSelection() {
                     console.warn('⚠️ Error fetching element info:', err);
                 }
 
-                let fragData = null;
-                if (typeof fragments.exportFragments === 'function') {
-                    console.log('🧪 Exporting fragment data for group:', fragmentID);
-                    fragData = fragments.exportFragments(group);
-                    if (!fragData) console.warn('⚠️ Failed to export fragment data for fragmentID:', fragmentID);
-                } else {
-                    console.warn('⚠️ fragments.exportFragments is not available. Skipping geometry export.');
-                }
-
-                console.log('🗂️ Directory already selected:', dirHandle.name);
-
-                let globalId = metadata.GlobalId;
-                if (globalId && typeof globalId === 'object') {
-                    globalId = globalId.value || globalId.id || globalId.GlobalId || globalId.toString();
-                }
-                const nameBase = globalId || `frag_${expressID}`;
-                const jsonFileHandle = await dirHandle.getFileHandle(`${nameBase}.json`, { create: true });
-                const jsonWritable = await jsonFileHandle.createWritable();
-                await jsonWritable.write(JSON.stringify(metadata, null, 2));
-                await jsonWritable.close();
-                console.log('✅ Metadata saved:', `${nameBase}.json`);
-
-                const jsonFilePath = `reusable_components/${nameBase}.json`;
-                console.log('📤 Sending json_file_path to backend:', jsonFilePath);
-
+            let fragData = null;
+            if (typeof fragments.exportFragments === 'function') {
+                console.log('🧪 Exporting fragment data for group:', fragmentID);
                 try {
-                    const url = `/get-element-info/?model_id=${encodeURIComponent(currentModelId)}&express_id=${expressID}` +
-                        `&filename=${encodeURIComponent(`${nameBase}.json`)}&model_uuid=${encodeURIComponent(modelGroupUUID)}` +
-                        `&metadata=${encodeURIComponent(JSON.stringify(metadata))}`;
-
-                    const response = await fetch(url);
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-                    console.log('✅ Metadata stored on server');
-                } catch (err) {
-                    console.error('❌ Failed to upload component:', err);
+                    fragData = fragments.exportFragments(group, { [fragmentID]: [expressID] });
+                } catch {
+                    fragData = fragments.exportFragments(group);
                 }
+                if (!fragData) console.warn('⚠️ Failed to export fragment data for fragmentID:', fragmentID);
+            } else {
+                console.warn('⚠️ fragments.exportFragments is not available. Skipping geometry export.');
+            }
 
-                saveButton.style.display = 'none';
+            let globalId = metadata.GlobalId;
+            if (globalId && typeof globalId === 'object') {
+                globalId = globalId.value || globalId.id || globalId.GlobalId || globalId.toString();
+            }
+            const nameBase = globalId || `frag_${expressID}`;
+
+            if (fragData) {
+                try {
+                    const blob = new Blob([fragData], { type: 'application/octet-stream' });
+                    const formData = new FormData();
+                    formData.append('global_id', nameBase);
+                    formData.append('fragment_file', blob, `${nameBase}.frag`);
+                    const uploadResponse = await fetch('/upload-fragment/', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    if (!uploadResponse.ok) {
+                        throw new Error(`HTTP ${uploadResponse.status}`);
+                    }
+                    console.log('✅ Fragment uploaded');
+                } catch (err) {
+                    console.error('❌ Failed to upload fragment:', err);
+                }
+            }
+
+            saveButton.style.display = 'none';
             } catch (err) {
                 console.error('❌ Save error:', err);
                 alert('❌ Failed to save component: ' + err.message);
