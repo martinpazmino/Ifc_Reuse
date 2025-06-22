@@ -481,7 +481,15 @@
         async function initViewer() {
             viewerTHREE = await import('https://cdn.skypack.dev/three@0.150.1');
             const { OrbitControls } = await import('https://cdn.skypack.dev/three-stdlib/controls/OrbitControls.js');
+
             const container = document.getElementById('viewer-container');
+
+            viewerWorld = {
+                scene: new viewerTHREE.Scene(),
+                camera: new viewerTHREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000),
+                renderer: new viewerTHREE.WebGLRenderer({ antialias: true })
+            };
+
             const ambientLight = new viewerTHREE.AmbientLight(0xffffff, 1);
             viewerWorld.scene.add(ambientLight);
 
@@ -489,11 +497,6 @@
             directionalLight.position.set(10, 10, 10);
             viewerWorld.scene.add(directionalLight);
 
-            viewerWorld = {
-                scene: new viewerTHREE.Scene(),
-                camera: new viewerTHREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000),
-                renderer: new viewerTHREE.WebGLRenderer({ antialias: true })
-            };
             viewerWorld.renderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(viewerWorld.renderer.domElement);
             viewerWorld.camera.position.set(3, 3, 3);
@@ -507,7 +510,6 @@
             animate();
         }
 
-        document.addEventListener('DOMContentLoaded', initViewer);
 
         async function loadOBJModel(objUrl, mtlUrl) {
             if (!viewerWorld) return;
@@ -788,6 +790,9 @@
                     const mtlPath = `/media/fragments/${globalId}.mtl`;
 
                     try {
+                        if (!viewerWorld) {
+                            await initViewer();
+                        }
                         await loadOBJModel(objPath, mtlPath);
                     } catch (err) {
                         console.error('Error loading OBJ/MTL files:', err);
