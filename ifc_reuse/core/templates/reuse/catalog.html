@@ -510,17 +510,14 @@
         }
 
         function loadOBJModel(globalId) {
-            const objPath = `/media/fragments/${globalId}.obj`;
-            const mtlPath = `/media/fragments/${globalId}.mtl`;
-
             const mtlLoader = new THREE.MTLLoader();
-            mtlLoader.setPath(`/media/fragments/`);
+            mtlLoader.setPath('/media/fragments/');
             mtlLoader.load(`${globalId}.mtl`, (materials) => {
                 materials.preload();
 
                 const objLoader = new THREE.OBJLoader();
                 objLoader.setMaterials(materials);
-                objLoader.setPath(`/media/fragments/`);
+                objLoader.setPath('/media/fragments/');
                 objLoader.load(`${globalId}.obj`, (object) => {
                     if (currentModel) {
                         scene.remove(currentModel);
@@ -528,6 +525,7 @@
                     currentModel = object;
                     scene.add(object);
 
+                    // Auto center and scale
                     const box = new THREE.Box3().setFromObject(object);
                     const center = box.getCenter(new THREE.Vector3());
                     const size = box.getSize(new THREE.Vector3());
@@ -539,14 +537,9 @@
                     camera.position.set(3, 3, 3);
                     controls.target.set(0, 0, 0);
                     controls.update();
-                }, undefined, (err) => {
-                    console.error('OBJ load error:', err);
                 });
-            }, undefined, (err) => {
-                console.error('MTL load error:', err);
             });
         }
-
 
 
 
