@@ -473,82 +473,37 @@
         const toggleFavoriteUrl = "{% url 'core:toggle_favorite' %}";
 
         // === Fragment viewer setup ===
-        let viewerComponents = null;
+
         let viewerWorld = null;
-        let viewerFragments = null;
         let viewerModel = null;
 
-        async function initFragmentViewer() {
-            const container = document.getElementById('viewer-container');
-            if (!container) return;
-
-            const libs = await import("{% static 'js/libs/index.mjs' %}");
-            const { Components, Worlds, SimpleScene, SimpleCamera, SimpleRenderer, FragmentsManager } = libs;
-
-            viewerComponents = new Components();
-            await viewerComponents.init();
-
-            const worlds = viewerComponents.get(Worlds);
-            viewerWorld = worlds.create(SimpleScene, SimpleCamera, SimpleRenderer);
-
-            viewerWorld.scene = new SimpleScene(viewerComponents);
-            viewerWorld.renderer = new SimpleRenderer(viewerComponents, container);
-            viewerWorld.camera = new SimpleCamera(viewerComponents);
-
-            viewerWorld.scene.setup();
-            viewerWorld.camera.controls.setLookAt(12, 6, 8, 0, 0, 0);
-
-            viewerFragments = viewerComponents.get(FragmentsManager);
-
-            const animate = () => {
-                requestAnimationFrame(animate);
-                if (viewerWorld?.renderer?.three) {
-                    viewerWorld.renderer.three.render(viewerWorld.scene.three, viewerWorld.camera.three);
-                }
-            };
-            animate();
-        }
-
-        async function loadFragmentFile(url) {
-            if (!viewerFragments) return;
-            const resp = await fetch(url);
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-            const buffer = new Uint8Array(await resp.arrayBuffer());
+        async function loadOBJModel(objUrl, mtlUrl) {
+            if (!viewerWorld) return;
 
             if (viewerModel) {
-                viewerFragments.disposeGroup(viewerModel.uuid);
                 viewerWorld.scene.three.remove(viewerModel);
             }
 
-            viewerModel = await viewerFragments.load(buffer);
-            viewerWorld.scene.three.add(viewerModel);
+            const THREE = await import('https://cdn.skypack.dev/three@0.150.1');
+            const { MTLLoader } = await import('https://cdn.skypack.dev/three-stdlib/loaders/MTLLoader.js');
+            const { OBJLoader } = await import('https://cdn.skypack.dev/three-stdlib/loaders/OBJLoader.js');
 
-            const box = new THREE.Box3().setFromObject(viewerModel);
-            if (!box.isEmpty()) {
-                viewerWorld.camera.controls.fitToBox(box, true);
-            }
+            const mtlLoader = new MTLLoader();
+            mtlLoader.load(mtlUrl, (materials) => {
+                materials.preload();
+                const objLoader = new OBJLoader();
+                objLoader.setMaterials(materials);
+                objLoader.load(objUrl, (obj) => {
+                    viewerModel = obj;
+                    viewerWorld.scene.three.add(obj);
+                    const box = new THREE.Box3().setFromObject(obj);
+                    viewerWorld.camera.controls.fitToBox(box, true);
+                });
+            });
         }
 
-        initFragmentViewer();
 
-        window.adjustPanelPosition = function() {
-            const header = document.querySelector('header');
-            const panel = document.getElementById('details-panel');
-            if (header && panel) {
-                const headerHeight = header.offsetHeight;
-                panel.style.top = `${headerHeight}px`;
-                panel.style.height = `calc(100vh - ${headerHeight}px)`;
-            }
-        };
 
-        window.addEventListener('load', window.adjustPanelPosition);
-        window.addEventListener('resize', window.adjustPanelPosition);
-
-        window.toggleDropdown = function(event) {
-            event.stopPropagation();
-            const dropdown = event.currentTarget.closest('.dropdown');
-            dropdown.classList.toggle('active');
-        };
 
         document.addEventListener('click', function(e) {
             if (e.target && e.target.id === 'login-btn') {
@@ -790,12 +745,15 @@
 
                     await loadComments(globalId);
 
-                    const fragPath = `/media/reusable_components/${globalId}.frag`;
+                    const objPath = `/media/fragments/${globalId}.obj`;
+                    const mtlPath = `/media/fragments/${globalId}.mtl`;
+
                     try {
-                        await loadFragmentFile(fragPath);
+                        await loadOBJModel(objPath, mtlPath);
                     } catch (err) {
-                        console.error('Error loading fragment file:', err);
+                        console.error('Error loading OBJ/MTL files:', err);
                     }
+
 
                     const commentSubmit = document.getElementById('comment-submit');
                     commentSubmit.onclick = () => submitComment(globalId);
