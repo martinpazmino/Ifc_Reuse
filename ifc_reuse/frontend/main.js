@@ -436,6 +436,11 @@ function setupSelection() {
                     materials: props.materials || props.Materials || null,
                 };
 
+                let globalId = metadata.GlobalId;
+                if (globalId && typeof globalId === 'object') {
+                    globalId = globalId.value || globalId.id || globalId.GlobalId || globalId.toString();
+                }
+
                 console.log('🧠 Properties:', metadata);
                 const extractionPayload = {
                     model_id: currentModelId,
@@ -464,10 +469,6 @@ function setupSelection() {
                     console.error('❌ Network error during extraction:', err);
                 }
 
-                let globalId = metadata.GlobalId;
-                if (globalId && typeof globalId === 'object') {
-                    globalId = globalId.value || globalId.id || globalId.GlobalId || globalId.toString();
-                }
                 const nameBase = globalId || `frag_${expressID}`;
 
                 try {
