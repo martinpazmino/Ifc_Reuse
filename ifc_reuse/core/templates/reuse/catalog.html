@@ -7,12 +7,9 @@
     <title>Kategorien - IFC Reuse</title>
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <script src="https://unpkg.com/@heroicons/vue@2.0.13/dist/heroicons.js"></script>
+    <script src="https://unpkg.com/@heroicons/vue@2.0.13/dist/heroicons.js" ></script>
     <!-- Three.js and loaders -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r150/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/examples/js/loaders/MTLLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/examples/js/loaders/OBJLoader.js"></script>
+
     <style>
         .dropdown-content {
             display: none;
@@ -474,6 +471,14 @@
             <p class="text-xs text-gray-400 mt-2">© 2025 IFC Reuse Platform. Alle Rechte vorbehalten.</p>
         </div>
     </footer>
-    <script src="{% static 'js/catalog-viewer.js' %}"></script>
+    <script>
+        const commentsUrlBase = "{% url 'core:get_comments' %}";
+        const addCommentUrl = "{% url 'core:add_comment' %}";
+        const toggleFavoriteUrl = "{% url 'core:toggle_favorite' %}";
+    </script>
+
+    <script src="{% static 'frontend/catalog-viewer.iife.js' %}"></script>
+
+
 </body>
 </html>

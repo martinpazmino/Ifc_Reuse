@@ -17,10 +17,11 @@
     "@thatopen/components-front": "^2.4.12",
     "@thatopen/fragments": "^3.0.7",
     "@thatopen/ui": "^2.4.5",
-    "three": "^0.175.0",
+    "three": "^0.177.0",
     "three-mesh-bvh": "^0.9.0",
-    "web-ifc": "0.0.68",
-    "web-ifc-viewer": "^1.0.218"
+    "vite-plugin-resolve": "^2.5.2",
+    "vite-plugin-virtual": "^0.4.0",
+    "web-ifc": "0.0.68"
   },
   "devDependencies": {
     "vite": "^5.0.0"

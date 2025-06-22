@@ -1,32 +1,33 @@
 import { defineConfig } from 'vite';
-import { fileURLToPath, URL } from 'url';
+import path from 'path';
+import virtual from 'vite-plugin-virtual';
+import fs from 'fs';
+
+const orbitControls = fs.readFileSync('node_modules/three/examples/jsm/controls/OrbitControls.js', 'utf-8');
+const objLoader = fs.readFileSync('node_modules/three/examples/jsm/loaders/OBJLoader.js', 'utf-8');
+const mtlLoader = fs.readFileSync('node_modules/three/examples/jsm/loaders/MTLLoader.js', 'utf-8');
 
 export default defineConfig({
-  root: './',  // Make sure you're in the frontend directory
-
-  server: {
-    port: 5173,
-  },
-
+  plugins: [
+    virtual({
+      'three/examples/jsm/controls/OrbitControls.js': orbitControls,
+      'three/examples/jsm/loaders/OBJLoader.js': objLoader,
+      'three/examples/jsm/loaders/MTLLoader.js': mtlLoader,
+    }),
+  ],
   build: {
-    sourcemap: true,
-    outDir: '../static/frontend',  // Adjust this based on your Django/static setup
+    outDir: '../static/frontend',
     emptyOutDir: true,
-    assetsDir: '',
+    lib: {
+      entry: path.resolve(__dirname, 'catalog-viewer.js'),
+      name: 'CatalogViewer',
+      fileName: 'catalog-viewer',
+      formats: ['iife'],
+    },
     rollupOptions: {
-      input: './index.html',  // Use index.html as entry (important!)
       output: {
-        entryFileNames: '[name].js',
-        chunkFileNames: '[name].js',
         assetFileNames: '[name].[ext]',
       },
-    },
-    target: 'esnext',  // This allows top-level await and modern syntax
-  },
-
-  esbuild: {
-    target: 'esnext',
-    loader: 'js',
-    include: /.*\.js$/,  // allow ESM style imports even in .js files
-  },
+    }
+  }
 });
