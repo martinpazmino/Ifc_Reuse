@@ -12,6 +12,8 @@ from django.core.files.storage import default_storage
 
 from .models import UploadedIFC, ReusableComponent
 
+IFCCONVERT_PATH = r"C:\IfcConvert\IfcConvert.exe"
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ifc_reuse.settings")
 django.setup()
 def get_element_info(ifc_path: str, express_id: int) -> Dict[str, object]:
@@ -172,52 +174,50 @@ def save_metadata_and_create_component(
     return json_path
 
 
-def extract_component_files(ifc_path: str, express_id: int, basename: str) -> Tuple[str, str]:
-    """Extract a single IFC element into its own IFC and OBJ files.
+import ifcopenshell
+import subprocess
+import os
+from django.conf import settings
 
-    Parameters
-    ----------
-    ifc_path:
-        Path to the source IFC model.
-    express_id:
-        ID of the element to extract.
-    basename:
-        Base filename for the exported files, without extension.
+def extract_component_files(ifc_path: str, express_id: int, global_id: str):
+    """Extract a single IFC element and convert to OBJ using IfcConvert."""
 
-    Returns
-    -------
-    Tuple[str, str]
-        Paths to the generated sub-IFC and OBJ files.
-    """
+    # Create output folders
+    fragments_dir = os.path.join(settings.MEDIA_ROOT, 'fragments')
+    temp_ifcs_dir = os.path.join(settings.MEDIA_ROOT, 'temp_ifcs')
+    os.makedirs(fragments_dir, exist_ok=True)
+    os.makedirs(temp_ifcs_dir, exist_ok=True)
 
-    out_dir = os.path.join(settings.MEDIA_ROOT, "extracted_components")
-    os.makedirs(out_dir, exist_ok=True)
+    # Define output file paths
+    temp_ifc_path = os.path.join(temp_ifcs_dir, f"{global_id}.ifc")
+    output_obj_path = os.path.join(fragments_dir, f"{global_id}.obj")
 
-    sub_ifc_path = os.path.join(out_dir, f"{basename}.ifc")
-    obj_path = os.path.join(out_dir, f"{basename}.obj")
+    # Load full IFC and extract element
+    model = ifcopenshell.open(ifc_path)
+    element = model.by_id(express_id)
+    if not element:
+        raise ValueError(f"Element with expressID {express_id} not found")
 
-    # Use IfcConvert's --include option to create the subset and OBJ
+    # Create mini IFC file with single element
+    mini_ifc = ifcopenshell.file(schema=model.schema)
+    mini_ifc.add(element)
+    mini_ifc.write(temp_ifc_path)
+
+    # Call IfcConvert on mini IFC
+    command = [
+        settings.IFCCONVERT_PATH,
+        temp_ifc_path,
+        output_obj_path,
+        "--use-element-guids"
+    ]
+
     try:
-        subprocess.run(
-            [
-                "IfcConvert",
-                "--include",
-                f"#{express_id}",
-                ifc_path,
-                sub_ifc_path,
-            ],
-            check=True,
-            capture_output=True,
-        )
-        subprocess.run(
-            ["IfcConvert", sub_ifc_path, obj_path],
-            check=True,
-            capture_output=True,
-        )
-    except FileNotFoundError as e:
-        raise RuntimeError("IfcConvert command not found") from e
+        subprocess.run(command, check=True)
     except subprocess.CalledProcessError as e:
-        stderr = e.stderr.decode().strip() if e.stderr else str(e)
-        raise RuntimeError(f"IfcConvert failed: {stderr}") from e
+        raise RuntimeError(f"IfcConvert failed: {e.stderr}") from e
+    finally:
+        # Cleanup temporary IFC
+        if os.path.exists(temp_ifc_path):
+            os.remove(temp_ifc_path)
 
-    return sub_ifc_path, obj_path
+    return output_obj_path
