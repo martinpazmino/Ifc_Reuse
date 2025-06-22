@@ -7,12 +7,15 @@ import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 let scene, camera, renderer, controls, currentModel = null;
 
 function initViewer() {
+    if (renderer) return;  // Prevent double initialization
+
     const container = document.getElementById('viewer-container');
+
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
-    renderer = new THREE.WebGLRenderer({antialias: true});
+    camera.position.set(3, 3, 3);
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
-    container.innerHTML = "";
     container.appendChild(renderer.domElement);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
@@ -22,8 +25,17 @@ function initViewer() {
     scene.add(directionalLight);
 
     controls = new OrbitControls(camera, renderer.domElement);
-    camera.position.set(3, 3, 3);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.1;
+    controls.target.set(0, 0, 0);
     controls.update();
+
+    window.addEventListener('resize', () => {
+        const container = document.getElementById('viewer-container');
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+    });
 
     animate();
 }
@@ -44,27 +56,47 @@ function loadOBJModel(globalId) {
         objLoader.setMaterials(materials);
         objLoader.setPath('/media/fragments/');
         objLoader.load(`${globalId}.obj`, (object) => {
+
             if (currentModel) {
                 scene.remove(currentModel);
             }
             currentModel = object;
-            scene.add(object);
 
-            // Auto center and scale
+            // Normalize model position and scale
             const box = new THREE.Box3().setFromObject(object);
             const center = box.getCenter(new THREE.Vector3());
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z);
             const scale = 2 / maxDim;
+
             object.scale.set(scale, scale, scale);
             object.position.sub(center.multiplyScalar(scale));
 
+            scene.add(object);
+
+            // Reset camera & controls to center
             camera.position.set(3, 3, 3);
             controls.target.set(0, 0, 0);
             controls.update();
+
+            console.log(`✅ Model ${globalId} loaded and displayed.`);
+        },
+        undefined,
+        (error) => {
+            console.error(`❌ Error loading OBJ for ${globalId}:`, error);
         });
+
+    },
+    undefined,
+    (error) => {
+        console.error(`❌ Error loading MTL for ${globalId}:`, error);
     });
 }
+
+// Initialize viewer after DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    initViewer();
+});
 
 
 document.addEventListener('click', function (e) {
@@ -305,10 +337,11 @@ document.querySelectorAll('.component-item').forEach(item => {
             await loadComments(globalId);
 
             try {
-                loadOBJModel(globalId);
+
             } catch (err) {
                 console.error('Error loading OBJ/MTL files:', err);
             }
+
 
 
             const commentSubmit = document.getElementById('comment-submit');
@@ -326,6 +359,11 @@ document.querySelectorAll('.component-item').forEach(item => {
             }
 
             document.getElementById('details-panel').classList.add('show');
+
+            // Use small timeout to wait until DOM updates layout
+            setTimeout(() => {
+                loadOBJModel(globalId);
+            }, 100);
         } catch (error) {
             console.error('Error fetching component details:', error);
             const errorDiv = document.createElement('div');
@@ -365,4 +403,5 @@ document.querySelectorAll('.component-item').forEach(async item => {
 
 document.addEventListener('DOMContentLoaded', () => {
     initViewer();
+
 });
