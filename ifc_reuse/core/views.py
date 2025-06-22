@@ -286,3 +286,42 @@ def save_fragment(request):
     default_storage.save(file_path, frag_file)
 
     return JsonResponse({"status": "saved", "path": os.path.join(settings.MEDIA_URL, "fragments", f"{global_id}.frag")})
+
+
+@require_POST
+def extract_component(request):
+    """Extract a single IFC element to a sub-IFC and OBJ."""
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    model_id = data.get("model_id")
+    express_id = data.get("express_id")
+    global_id = data.get("global_id")
+
+    if model_id is None or express_id is None:
+        return JsonResponse({"error": "model_id and express_id required"}, status=400)
+
+    try:
+        model_id = int(model_id)
+        express_id = int(express_id)
+    except (TypeError, ValueError):
+        return JsonResponse({"error": "model_id and express_id must be integers"}, status=400)
+
+    try:
+        upload = UploadedIFC.objects.get(pk=model_id)
+    except UploadedIFC.DoesNotExist:
+        return JsonResponse({"error": "model not found"}, status=404)
+
+    base_name = global_id or f"component_{express_id}"
+    try:
+        sub_ifc, obj = extract_component_files(upload.file.path, express_id, base_name)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+    base_url = os.path.join(settings.MEDIA_URL, "extracted_components")
+    return JsonResponse({
+        "sub_ifc": os.path.join(base_url, os.path.basename(sub_ifc)),
+        "obj": os.path.join(base_url, os.path.basename(obj)),
+    })
