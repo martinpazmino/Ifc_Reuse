@@ -437,6 +437,32 @@ function setupSelection() {
                 };
 
                 console.log('🧠 Properties:', metadata);
+                const extractionPayload = {
+                    model_id: currentModelId,
+                    express_id: expressID,
+                    global_id: globalId
+                };
+
+                try {
+                    const extractionResponse = await fetch('/extract-component/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(extractionPayload)
+                    });
+
+                    if (!extractionResponse.ok) {
+                        const errorData = await extractionResponse.json();
+                        console.error('❌ Extraction failed:', errorData);
+                        alert('❌ Extraction failed: ' + errorData.error);
+                    } else {
+                        const resultData = await extractionResponse.json();
+                        console.log('✅ Extraction success:', resultData);
+                        // Optional success message:
+                        // alert('✅ Component extracted successfully');
+                    }
+                } catch (err) {
+                    console.error('❌ Network error during extraction:', err);
+                }
 
                 let globalId = metadata.GlobalId;
                 if (globalId && typeof globalId === 'object') {

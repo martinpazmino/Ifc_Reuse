@@ -1,4 +1,5 @@
 from django.views.decorators.http import require_http_methods, require_GET, require_POST
+from django.views.decorators.csrf import csrf_exempt  # <-- add this
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.conf import settings
@@ -10,10 +11,11 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 from django.db import IntegrityError
 from .models import ReusableComponent, UploadedIFC, ComponentComment, Favorite
-from .utils import get_element_info, save_metadata_and_create_component
+from .utils import get_element_info, save_metadata_and_create_component, extract_component_files
 from typing import Dict, Optional
 import json
 import os
+
 
 def index(request):
     return render(request, "reuse/index.html")
@@ -287,7 +289,7 @@ def save_fragment(request):
 
     return JsonResponse({"status": "saved", "path": os.path.join(settings.MEDIA_URL, "fragments", f"{global_id}.frag")})
 
-
+@csrf_exempt
 @require_POST
 def extract_component(request):
     """Extract a single IFC element to a sub-IFC and OBJ."""
