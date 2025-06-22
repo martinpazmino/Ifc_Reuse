@@ -361,6 +361,8 @@
                             data-json-path="{% static comp.global_id|add:'.json' %}"
                             data-name="{{ comp.name }}"
                             data-global-id="{{ comp.global_id }}"
+                            data-project-name="{{ comp.project_name }}"
+                            data-uploaded="{{ comp.uploaded_at|date:'d.m.Y' }}"
                             data-has-comments="false"
                             data-is-favorite="{% if comp.global_id in favorite_global_ids %}true{% else %}false{% endif %}">
                             <span class="flex-grow">{{ comp.name }} ({{ comp.global_id }})</span>

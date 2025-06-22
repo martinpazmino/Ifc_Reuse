@@ -282,15 +282,12 @@
                     globalIdEl.classList.toggle('na', !(data.GlobalId?.value || globalId));
 
                     const projectEl = document.getElementById('element-project');
-                    {% for comp in components %}
-                        {% if comp.global_id == globalId %}
-                            projectEl.textContent = '{{ comp.ifc_file.project_name|default:"N/A" }}';
-                            projectEl.classList.toggle('na', !'{{ comp.ifc_file.project_name }}');
+                    projectEl.textContent = item.dataset.projectName || 'N/A';
+                    projectEl.classList.toggle('na', !item.dataset.projectName);
+
                     const uploadedEl = document.getElementById('element-uploaded');
-                    uploadedEl.textContent = '{{ comp.uploaded_at|date:"d.m.Y" }}' || 'N/A';
-                    uploadedEl.classList.toggle('na', !'{{ comp.uploaded_at }}');
-                        {% endif %}
-                    {% endfor %}
+                    uploadedEl.textContent = item.dataset.uploaded || 'N/A';
+                    uploadedEl.classList.toggle('na', !item.dataset.uploaded);
 
                     document.getElementById('element-name').textContent = data.Name?.value || name || 'N/A';
 
