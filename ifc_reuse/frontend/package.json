@@ -20,7 +20,7 @@
     "three": "^0.175.0",
     "three-mesh-bvh": "^0.9.0",
     "web-ifc": "0.0.68",
-    "web-ifc-viewer": "^0.0.66"
+    "web-ifc-viewer": "^1.0.218"
   },
   "devDependencies": {
     "vite": "^5.0.0"

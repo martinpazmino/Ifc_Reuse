@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import * as BUI from '@thatopen/ui';
-import { extractExpressID } from './extractor.js';
 
 // Global variables
 let components = null;
@@ -13,8 +12,6 @@ let outliner = null;
 let model = null;
 let modelGroupUUID = null;
 let currentModelId = null;
-let currentModelUrl = null;
-let currentModelBuffer = null;
 let lastSelected = null;
 let saveButton = null;
 let container = null;
@@ -208,13 +205,11 @@ async function loadIfc() {
         const file = files.find(f => String(f.id) === String(modelId));
         if (!file) throw new Error(`No IFC file found for model_id: ${modelId}`);
         console.log('🧪 Found IFC file:', file.url);
-        currentModelUrl = file.url;
 
         const res = await fetch(file.url);
         if (!res.ok) throw new Error(`HTTP error ${res.status}: ${res.statusText}`);
         const data = await res.arrayBuffer();
         const buffer = new Uint8Array(data);
-        currentModelBuffer = buffer;
         console.log('🧪 IFC file fetched, buffer size:', buffer.length);
 
         model = await fragmentIfcLoader.load(buffer);
@@ -465,18 +460,11 @@ function setupSelection() {
                 }
 
                 let fragData = null;
-                if (currentModelUrl) {
-                    try {
-                        fragData = await extractExpressID(currentModelUrl, expressID);
-                    } catch (err) {
-                        console.warn('⚠️ Extraction module failed:', err);
-                    }
-                }
-                if (!fragData && typeof fragments.exportFragments === 'function') {
+                if (typeof fragments.exportFragments === 'function') {
                     console.log('🧪 Exporting fragment data for group:', fragmentID);
                     fragData = fragments.exportFragments(group);
                     if (!fragData) console.warn('⚠️ Failed to export fragment data for fragmentID:', fragmentID);
-                } else if (!fragData) {
+                } else {
                     console.warn('⚠️ fragments.exportFragments is not available. Skipping geometry export.');
                 }
 
