@@ -3,7 +3,7 @@ import os
 import django
 
 import ifcopenshell
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from django.conf import settings
 from django.core.files.base import ContentFile
@@ -169,3 +169,54 @@ def save_metadata_and_create_component(
         )
 
     return json_path
+
+
+def extract_component_files(ifc_path: str, express_id: int, basename: str) -> Tuple[str, str]:
+    """Extract a single IFC element into its own IFC and OBJ files.
+
+    Parameters
+    ----------
+    ifc_path:
+        Path to the source IFC model.
+    express_id:
+        ID of the element to extract.
+    basename:
+        Base filename for the exported files, without extension.
+
+    Returns
+    -------
+    Tuple[str, str]
+        Paths to the generated sub-IFC and OBJ files.
+    """
+
+    model = ifcopenshell.open(ifc_path)
+    element = model.by_id(express_id)
+    if not element:
+        raise ValueError("Element not found")
+
+    subset = model.create_subset(elements=[element])
+
+    out_dir = os.path.join(settings.MEDIA_ROOT, "extracted_components")
+    os.makedirs(out_dir, exist_ok=True)
+
+    sub_ifc_path = os.path.join(out_dir, f"{basename}.ifc")
+    subset.write(sub_ifc_path)
+
+    from ifcopenshell import geom
+
+    settings = geom.settings()
+    settings.set(settings.USE_WORLD_COORDS, True)
+    shape = geom.create_shape(settings, element)
+
+    obj_path = os.path.join(out_dir, f"{basename}.obj")
+    with open(obj_path, "w") as f:
+        verts = shape.geometry.verts
+        faces = shape.geometry.faces
+        for i in range(0, len(verts), 3):
+            f.write(f"v {verts[i]} {verts[i+1]} {verts[i+2]}\n")
+        for i in range(0, len(faces), 3):
+            f.write(
+                f"f {faces[i] + 1} {faces[i + 1] + 1} {faces[i + 2] + 1}\n"
+            )
+
+    return sub_ifc_path, obj_path
