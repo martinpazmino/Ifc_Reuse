@@ -31,7 +31,9 @@ def categories(request):
         cat = component.component_type or 'Unknown'
         info = {
             'name': component.material_name or 'Unnamed',
-            'global_id': component.global_id or component.json_file_path.split('/')[-1].replace('.json', '')
+            'global_id': component.global_id or component.json_file_path.split('/')[-1].replace('.json', ''),
+            'project_name': component.ifc_file.project_name,
+            'uploaded_at': component.uploaded_at,
         }
         categories.setdefault(cat, []).append(info)
 
