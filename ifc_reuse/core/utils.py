@@ -194,7 +194,22 @@ def extract_component_files(ifc_path: str, express_id: int, basename: str) -> Tu
     if not element:
         raise ValueError("Element not found")
 
-    subset = model.create_subset(elements=[element])
+    # Try the simple API first
+    try:
+        subset = model.create_subset(elements=[element])
+    except Exception:
+        # Fallback for newer ifcopenshell versions that removed `create_subset`
+        try:
+            from ifcopenshell.util.subset import Subset
+            from ifcopenshell.util.selector import Selector
+
+            selector = Selector()
+            subsetter = Subset()
+            subsetter.add_model(model)
+            subsetter.add_elements(selector.parse(model, f"#{express_id}"))
+            subset = subsetter.to_file()
+        except Exception as sub_err:
+            raise RuntimeError(f"Failed to create subset: {sub_err}") from sub_err
 
     out_dir = os.path.join(settings.MEDIA_ROOT, "extracted_components")
     os.makedirs(out_dir, exist_ok=True)
