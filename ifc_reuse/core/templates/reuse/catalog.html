@@ -482,6 +482,12 @@
             viewerTHREE = await import('https://cdn.skypack.dev/three@0.150.1');
             const { OrbitControls } = await import('https://cdn.skypack.dev/three-stdlib/controls/OrbitControls.js');
             const container = document.getElementById('viewer-container');
+            const ambientLight = new viewerTHREE.AmbientLight(0xffffff, 1);
+            viewerWorld.scene.add(ambientLight);
+
+            const directionalLight = new viewerTHREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(10, 10, 10);
+            viewerWorld.scene.add(directionalLight);
 
             viewerWorld = {
                 scene: new viewerTHREE.Scene(),
