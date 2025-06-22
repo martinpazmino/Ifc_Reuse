@@ -476,15 +476,41 @@
 
         let viewerWorld = null;
         let viewerModel = null;
+        let viewerTHREE = null;
+
+        async function initViewer() {
+            viewerTHREE = await import('https://cdn.skypack.dev/three@0.150.1');
+            const { OrbitControls } = await import('https://cdn.skypack.dev/three-stdlib/controls/OrbitControls.js');
+            const container = document.getElementById('viewer-container');
+
+            viewerWorld = {
+                scene: new viewerTHREE.Scene(),
+                camera: new viewerTHREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000),
+                renderer: new viewerTHREE.WebGLRenderer({ antialias: true })
+            };
+            viewerWorld.renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(viewerWorld.renderer.domElement);
+            viewerWorld.camera.position.set(3, 3, 3);
+            viewerWorld.controls = new OrbitControls(viewerWorld.camera, viewerWorld.renderer.domElement);
+
+            const animate = () => {
+                requestAnimationFrame(animate);
+                viewerWorld.controls.update();
+                viewerWorld.renderer.render(viewerWorld.scene, viewerWorld.camera);
+            };
+            animate();
+        }
+
+        document.addEventListener('DOMContentLoaded', initViewer);
 
         async function loadOBJModel(objUrl, mtlUrl) {
             if (!viewerWorld) return;
 
             if (viewerModel) {
-                viewerWorld.scene.three.remove(viewerModel);
+                viewerWorld.scene.remove(viewerModel);
             }
 
-            const THREE = await import('https://cdn.skypack.dev/three@0.150.1');
+            const THREE = viewerTHREE || await import('https://cdn.skypack.dev/three@0.150.1');
             const { MTLLoader } = await import('https://cdn.skypack.dev/three-stdlib/loaders/MTLLoader.js');
             const { OBJLoader } = await import('https://cdn.skypack.dev/three-stdlib/loaders/OBJLoader.js');
 
@@ -495,9 +521,16 @@
                 objLoader.setMaterials(materials);
                 objLoader.load(objUrl, (obj) => {
                     viewerModel = obj;
-                    viewerWorld.scene.three.add(obj);
+                    viewerWorld.scene.add(obj);
                     const box = new THREE.Box3().setFromObject(obj);
-                    viewerWorld.camera.controls.fitToBox(box, true);
+                    const size = box.getSize(new THREE.Vector3()).length();
+                    const center = box.getCenter(new THREE.Vector3());
+                    viewerWorld.controls.target.copy(center);
+                    viewerWorld.camera.position.copy(center).add(new THREE.Vector3(size, size, size));
+                    viewerWorld.camera.near = size / 100;
+                    viewerWorld.camera.far = size * 100;
+                    viewerWorld.camera.updateProjectionMatrix();
+                    viewerWorld.controls.update();
                 });
             });
         }
