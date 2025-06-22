@@ -21,7 +21,7 @@ function initViewer() {
     directionalLight.position.set(5, 5, 5);
     scene.add(directionalLight);
 
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls = new OrbitControls(camera, renderer.domElement);
     camera.position.set(3, 3, 3);
     controls.update();
 
@@ -35,12 +35,12 @@ function animate() {
 }
 
 function loadOBJModel(globalId) {
-    const mtlLoader = new THREE.MTLLoader();
+    const mtlLoader = new MTLLoader();
     mtlLoader.setPath('/media/fragments/');
     mtlLoader.load(`${globalId}.mtl`, (materials) => {
         materials.preload();
 
-        const objLoader = new THREE.OBJLoader();
+        const objLoader = new OBJLoader();
         objLoader.setMaterials(materials);
         objLoader.setPath('/media/fragments/');
         objLoader.load(`${globalId}.obj`, (object) => {
