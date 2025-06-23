@@ -262,6 +262,22 @@ async function toggleFavorite(globalId) {
         favoriteIcon.parentElement.appendChild(errorDiv);
     }
 }
+async function checkAndShowPassport(globalId) {
+    const pdfUrl = `/media/passports/${globalId}.pdf`;
+    try {
+        const response = await fetch(pdfUrl, { method: 'HEAD' });
+        if (response.ok) {
+            document.getElementById('pdf-download-link').href = pdfUrl;
+            document.getElementById('pdf-download-section').style.display = 'block';
+        } else {
+            document.getElementById('pdf-download-section').style.display = 'none';
+        }
+    } catch (err) {
+        console.error('Error checking PDF:', err);
+        document.getElementById('pdf-download-section').style.display = 'none';
+    }
+}
+
 
 document.querySelectorAll('.component-item').forEach(item => {
     item.addEventListener('click', async (e) => {
@@ -276,7 +292,7 @@ document.querySelectorAll('.component-item').forEach(item => {
 
         const jsonPath = `/media/reusable_components/${item.dataset.globalId}.json`;
         const name = item.dataset.name;
-        const globalId = item.dataset.globalId;
+
 
         try {
             const response = await fetch(jsonPath);
@@ -335,6 +351,7 @@ document.querySelectorAll('.component-item').forEach(item => {
             }
 
             await loadComments(globalId);
+            await checkAndShowPassport(globalId);
 
             try {
 
