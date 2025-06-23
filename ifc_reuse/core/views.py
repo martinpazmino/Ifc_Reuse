@@ -15,7 +15,8 @@ from .utils import get_element_info, save_metadata_and_create_component, extract
 from typing import Dict, Optional
 import json
 import os
-
+from .obj import generate_thumbnail
+from .pdf_passport import generate_passport_pdf
 
 def index(request):
     return render(request, "reuse/index.html")
@@ -319,3 +320,53 @@ def extract_component(request):
         "status": "success",
         "obj_file": os.path.join(base_url, os.path.basename(obj_path))
     })
+
+@csrf_exempt
+@require_POST
+def generate_passport_view(request):
+    try:
+        data = json.loads(request.body)
+        model_id = int(data.get("model_id"))
+        global_id = data.get("global_id")
+    except Exception:
+        return JsonResponse({"error": "Invalid input"}, status=400)
+
+    try:
+        component = ReusableComponent.objects.get(ifc_file_id=model_id, global_id=global_id)
+    except ReusableComponent.DoesNotExist:
+        return JsonResponse({"error": "Component not found"}, status=404)
+
+    # Load JSON metadata
+    json_path = os.path.join(settings.MEDIA_ROOT, component.json_file_path)
+
+    with open(json_path, 'r') as f:
+        json_data = json.load(f)
+
+    # OBJ path
+    obj_path = os.path.join(settings.MEDIA_ROOT, "fragments", f"{global_id}.obj")
+    thumbnail_path = obj_path.replace(".obj", ".png")
+
+    # Generate thumbnail if missing
+    if not os.path.exists(thumbnail_path):
+        generate_thumbnail(obj_path, thumbnail_path)
+
+    # Get related IFC upload info
+    uploaded_ifc = component.ifc_file
+    user_name = uploaded_ifc.user.username if uploaded_ifc.user else "Unknown User"
+    upload_date = uploaded_ifc.uploaded_at.date().isoformat()
+    project_name = uploaded_ifc.project_name or "N/A"
+
+    # PDF output
+    output_pdf_path = os.path.join(settings.MEDIA_ROOT, "passports", f"{global_id}.pdf")
+    os.makedirs(os.path.dirname(output_pdf_path), exist_ok=True)
+
+    # Generate passport
+    generate_passport_pdf(
+        json_data, obj_path, output_pdf_path,
+        user_name, upload_date, project_name,
+        logo_path = os.path.join(settings.BASE_DIR, "core", "static", "images", "logo.jpg")
+    )
+
+    # Return success
+    pdf_url = os.path.join(settings.MEDIA_URL, "passports", f"{global_id}.pdf")
+    return JsonResponse({"status": "success", "pdf_url": pdf_url})

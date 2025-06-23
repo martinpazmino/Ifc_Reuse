@@ -174,10 +174,7 @@ def save_metadata_and_create_component(
     return json_path
 
 
-import ifcopenshell
-import subprocess
-import os
-from django.conf import settings
+
 
 def extract_component_files(ifc_path: str, express_id: int, global_id: str):
     """Extract a single IFC element and convert to OBJ using IfcConvert."""

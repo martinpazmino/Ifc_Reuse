@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-
+from .views import generate_passport_view
 app_name = 'core'
 
 urlpatterns = [
@@ -23,4 +23,5 @@ urlpatterns = [
     path('api/toggle-favorite/', views.toggle_favorite, name='toggle_favorite'),
     path('save-fragment/', views.save_fragment, name='save_fragment'),
     path('extract-component/', views.extract_component, name='extract_component'),
+    path('generate-passport/', generate_passport_view, name='generate-passport'),
 ]

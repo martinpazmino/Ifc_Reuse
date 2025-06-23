@@ -469,6 +469,8 @@ function setupSelection() {
                     console.error('❌ Network error during extraction:', err);
                 }
 
+
+
                 const nameBase = globalId || `frag_${expressID}`;
 
                 try {
@@ -525,6 +527,14 @@ function setupSelection() {
                 } catch (err) {
                     console.error('❌ Failed to upload component:', err);
                 }
+                await fetch('/generate-passport/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model_id: currentModelId,
+                        global_id: globalId
+                    })
+                });
 
                 saveButton.style.display = 'none';
             } catch (err) {
