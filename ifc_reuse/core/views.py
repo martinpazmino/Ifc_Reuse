@@ -35,6 +35,7 @@ def categories(request):
             'global_id': component.global_id or component.json_file_path.split('/')[-1].replace('.json', ''),
             'project_name': component.ifc_file.project_name,
             'uploaded_at': component.uploaded_at,
+            'model_id': component.ifc_file_id,
         }
         categories.setdefault(cat, []).append(info)
 
