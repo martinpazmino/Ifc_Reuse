@@ -358,6 +358,7 @@
                             data-json-path="{% static comp.global_id|add:'.json' %}"
                             data-name="{{ comp.name }}"
                             data-global-id="{{ comp.global_id }}"
+                            data-model-id="{{ comp.model_id }}"
                             data-project-name="{{ comp.project_name }}"
                             data-uploaded="{{ comp.uploaded_at|date:'d.m.Y' }}"
                             data-has-comments="false"
@@ -415,7 +416,8 @@
                 </div>
                 <div id="pdf-download-section" class="property" style="display: none;">
                    <strong>PDF Passport:</strong>
-                   <a id="pdf-download-link" href="#" target="_blank" class="text-[#4CAF50] hover:underline ml-2">Download</a>
+                   <a id="pdf-download-link" href="#" target="_blank" class="text-[#4CAF50] hover:underline ml-2 hidden">Download</a>
+                   <button id="generate-pdf-button" class="ml-2 bg-[#4CAF50] text-[#F1FAEE] px-2 py-1 rounded hidden">Generieren</button>
                  </div>
 
 
@@ -485,8 +487,58 @@
         const toggleFavoriteUrl = "{% url 'core:toggle_favorite' %}";
     </script>
 
+</script>
     <script src="{% static 'frontend/catalog-viewer.iife.js' %}"></script>
+    <script>
+        async function generatePassport(globalId, modelId) {
+            try {
+                const response = await fetch('/generate-passport/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({ global_id: globalId, model_id: modelId })
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('pdf-download-link').href = data.pdf_url;
+                    document.getElementById('pdf-download-link').classList.remove('hidden');
+                    document.getElementById('generate-pdf-button').classList.add('hidden');
+                }
+            } catch (err) {
+                console.error('Error generating passport:', err);
+            }
+        }
 
+        async function checkAndShowPassportExtra(globalId, modelId) {
+            const pdfUrl = `/media/passports/${globalId}.pdf`;
+            try {
+                const response = await fetch(pdfUrl, { method: 'HEAD' });
+                document.getElementById('pdf-download-section').style.display = 'block';
+                if (response.ok) {
+                    document.getElementById('pdf-download-link').href = pdfUrl;
+                    document.getElementById('pdf-download-link').classList.remove('hidden');
+                    document.getElementById('generate-pdf-button').classList.add('hidden');
+                } else {
+                    document.getElementById('pdf-download-link').classList.add('hidden');
+                    const btn = document.getElementById('generate-pdf-button');
+                    btn.classList.remove('hidden');
+                    btn.onclick = () => generatePassport(globalId, modelId);
+                }
+            } catch (err) {
+                console.error('Error checking PDF:', err);
+                document.getElementById('pdf-download-section').style.display = 'none';
+            }
+        }
 
+        document.querySelectorAll('.component-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const globalId = item.dataset.globalId;
+                const modelId = item.dataset.modelId;
+                checkAndShowPassportExtra(globalId, modelId);
+            });
+        });
+    </script>
 </body>
 </html>
