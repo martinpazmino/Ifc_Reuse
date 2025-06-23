@@ -187,6 +187,22 @@ async function populateFragmentSelector() {
         console.error('❌ Error fetching fragment files:', err);
     }
 }
+async function checkAndShowPassport(globalId) {
+    const pdfUrl = `/media/passports/${globalId}.pdf`;
+
+    try {
+        const response = await fetch(pdfUrl, { method: 'HEAD' });
+        if (response.ok) {
+            document.getElementById('pdf-download-link').href = pdfUrl;
+            document.getElementById('pdf-download-section').style.display = 'block';
+        } else {
+            document.getElementById('pdf-download-section').style.display = 'none';
+        }
+    } catch (err) {
+        console.error('Error checking PDF:', err);
+        document.getElementById('pdf-download-section').style.display = 'none';
+    }
+}
 
 // Main initialization
 async function main() {
@@ -194,6 +210,14 @@ async function main() {
         await initializeScene();
         await populateFragmentSelector();
         console.log('🎉 Catalog initialized');
+
+        // Attach PDF check on click of each component item
+        document.querySelectorAll('.component-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const globalId = item.dataset.globalId;
+                checkAndShowPassport(globalId);
+            });
+        });
     } catch (err) {
         console.error('❌ Initialization error:', err);
         const errorDiv = document.createElement('div');
@@ -214,6 +238,7 @@ async function main() {
         document.body.appendChild(errorDiv);
     }
 }
+
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', main);
