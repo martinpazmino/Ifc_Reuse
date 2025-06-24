@@ -95,46 +95,7 @@ function loadOBJModel(globalId) {
 
 // Initialize viewer after DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    initViewer();  // Initialize your 3D viewer only once
-
-    document.querySelectorAll('.component-item').forEach(item => {
-        item.addEventListener('click', async (e) => {
-            const globalId = item.dataset.globalId;
-            const modelId = item.dataset.modelId;
-
-            if (e.target.closest('.favorite-icon')) {
-                const favId = e.target.closest('.favorite-icon').dataset.globalId;
-                await toggleFavorite(favId);
-                return;
-            }
-
-            document.querySelectorAll('.component-item').forEach(i => i.classList.remove('selected'));
-            item.classList.add('selected');
-
-            const jsonPath = `/media/reusable_components/${globalId}.json`;
-            const name = item.dataset.name;
-
-            try {
-                const response = await fetch(jsonPath);
-                if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-                const data = await response.json();
-
-                document.getElementById('element-name').textContent = data.Name?.value || name || 'N/A';
-                document.getElementById('element-type').textContent = data.type || 'N/A';
-                // (… fill in rest of your fields as before …)
-
-                await loadComments(globalId);
-                await checkAndShowPassportExtra(globalId, modelId);
-
-                document.getElementById('comment-submit').onclick = () => submitComment(globalId);
-                document.getElementById('details-panel').classList.add('show');
-
-                setTimeout(() => loadOBJModel(globalId), 100);
-            } catch (error) {
-                console.error('Error fetching component details:', error);
-            }
-        });
-    });
+    initViewer();
 });
 
 
@@ -301,39 +262,46 @@ async function toggleFavorite(globalId) {
         favoriteIcon.parentElement.appendChild(errorDiv);
     }
 }
-async function checkAndShowPassport(globalId) {
+async function checkAndShowPassport(globalId, modelId) {
     const pdfUrl = `/media/passports/${globalId}.pdf`;
+    const section      = document.getElementById('pdf-download-section');
+    const downloadLink = document.getElementById('pdf-download-link');
+    const genButton    = document.getElementById('generate-pdf-button');
     try {
         const response = await fetch(pdfUrl, { method: 'HEAD' });
+        // always reveal the section once we’ve checked
+        section.style.display = 'block';
         if (response.ok) {
-            document.getElementById('pdf-download-link').href = pdfUrl;
-            document.getElementById('pdf-download-section').style.display = 'block';
+            // PDF exists → show download link
+            downloadLink.href = pdfUrl;
+            downloadLink.classList.remove('hidden');
+            genButton.classList.add('hidden');
         } else {
-            document.getElementById('pdf-download-section').style.display = 'none';
+            // no PDF yet → show generate button
+            downloadLink.classList.add('hidden');
+            genButton.classList.remove('hidden');
+            genButton.onclick = () => generatePassport(globalId, modelId);
         }
     } catch (err) {
         console.error('Error checking PDF:', err);
-        document.getElementById('pdf-download-section').style.display = 'none';
+        section.style.display = 'none';
     }
 }
 
 
-document.addEventListener('DOMContentLoaded', () => {
 document.querySelectorAll('.component-item').forEach(item => {
     item.addEventListener('click', async (e) => {
         const globalId = item.dataset.globalId;
-        const modelId = item.dataset.modelId;
-
         if (e.target.closest('.favorite-icon')) {
-            const favId = e.target.closest('.favorite-icon').dataset.globalId;
-            await toggleFavorite(favId);
+            const globalId = e.target.closest('.favorite-icon').dataset.globalId;
+            await toggleFavorite(globalId);
             return;
         }
 
         document.querySelectorAll('.component-item').forEach(i => i.classList.remove('selected'));
         item.classList.add('selected');
 
-        const jsonPath = `/media/reusable_components/${item.dataset.globalId}.json`;
+        const jsonPath = item.dataset.jsonPath;
         const name = item.dataset.name;
 
 
@@ -394,7 +362,7 @@ document.querySelectorAll('.component-item').forEach(item => {
             }
 
             await loadComments(globalId);
-            await checkAndShowPassportExtra(globalId, modelId);
+            await checkAndShowPassport(globalId, item.dataset.modelId);
 
             try {
 
@@ -443,48 +411,22 @@ document.querySelectorAll('.component-item').forEach(item => {
         }
     });
 });
-});
-async function checkAndShowPassportExtra(globalId, modelId) {
-    const pdfUrl = `/media/passports/${globalId}.pdf`;
+
+document.querySelectorAll('.component-item').forEach(async item => {
+    const globalId = item.dataset.globalId;
     try {
-        const response = await fetch(pdfUrl, { method: 'HEAD' });
+        const response = await fetch(`${commentsUrlBase}?global_id=${globalId}`);
         if (response.ok) {
-            document.getElementById('pdf-download-link').href = pdfUrl;
-            document.getElementById('pdf-download-section').style.display = 'block';
-        } else {
-            // If PDF doesn't exist, try to generate it
-            await generatePassport(globalId, modelId);
-            // After generation, try again
-            const newResponse = await fetch(pdfUrl, { method: 'HEAD' });
-            if (newResponse.ok) {
-                document.getElementById('pdf-download-link').href = pdfUrl;
-                document.getElementById('pdf-download-section').style.display = 'block';
-            } else {
-                document.getElementById('pdf-download-section').style.display = 'none';
+            const comments = await response.json();
+            const iconsWrapper = document.querySelector(`.icons-wrapper[data-global-id="${globalId}"]`);
+            if (iconsWrapper) {
+                iconsWrapper.dataset.hasComments = comments.length > 0;
+                iconsWrapper.classList.toggle('has-comments', comments.length > 0);
             }
         }
-    } catch (err) {
-        console.error('Error checking/generating PDF:', err);
-        document.getElementById('pdf-download-section').style.display = 'none';
+    } catch (error) {
+        console.error('Error checking comments:', error);
     }
-}
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.component-item').forEach(async item => {
-        const globalId = item.dataset.globalId;
-        try {
-            const response = await fetch(`${commentsUrlBase}?global_id=${globalId}`);
-            if (response.ok) {
-                const comments = await response.json();
-                const iconsWrapper = document.querySelector(`.icons-wrapper[data-global-id="${globalId}"]`);
-                if (iconsWrapper) {
-                    iconsWrapper.dataset.hasComments = comments.length > 0;
-                    iconsWrapper.classList.toggle('has-comments', comments.length > 0);
-                }
-            }
-        } catch (error) {
-            console.error('Error checking comments:', error);
-        }
-    });
 });
 
 document.addEventListener('DOMContentLoaded', () => {
