@@ -27,7 +27,8 @@ def catalog(request):
 
 def categories(request):
     components_qs = ReusableComponent.objects.select_related('ifc_file').all()
-    available_categories = (
+    # Evaluate to a list immediately to avoid unexpected lazy evaluation later
+    available_categories = list(
         ReusableComponent.objects.order_by('component_type')
         .values_list('component_type', flat=True)
         .distinct()
@@ -35,7 +36,8 @@ def categories(request):
 
     selected_category = request.GET.get('category')
     if selected_category:
-        components_qs = components_qs.filter(component_type=selected_category)
+        # use case-insensitive match to avoid issues with capitalization in the database
+        components_qs = components_qs.filter(component_type__iexact=selected_category)
 
     categories = {}
     for component in components_qs:
