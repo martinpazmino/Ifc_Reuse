@@ -24,37 +24,42 @@
     </style>
 </head>
 <body class="bg-gray-900 text-[#F1FAEE] min-h-screen flex flex-col">
-    <!-- Header -->
-    <header class="bg-gray-800 shadow-md py-4 px-6 flex justify-between items-center">
-        <div class="flex items-center space-x-4">
-            <img src="{% static 'images/logo.jpg' %}" alt="Logo" class="h-20 mx-2">
-            <nav class="flex space-x-4 ml-4 text-lg">
-                <a href="{% url 'index' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Home</a>
-                <a href="{% url 'catalog' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Katalog</a>
-                <a href="{% url 'upload_page' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Upload</a>
-
-                <a href="{% url 'about' %}" class="text-[#F1FAEE] hover:text-[#4CAF50]">Über Uns</a>
-            </nav>
-        </div>
-        <div id="user-section">
-            {% if user.is_authenticated %}
-                <div class="dropdown relative">
-                    <button onclick="toggleDropdown(event)" class="text-[#F1FAEE] hover:text-[#4CAF50] flex items-center focus:outline-none">
-                        👤 <span class="ml-1">{{ user.username }}</span>
-                        <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                        </svg>
-                    </button>
-                    <div class="dropdown-content bg-gray-700 rounded shadow-lg">
-                        <a href="{% url 'settings' %}" class="block px-4 py-2 hover:bg-gray-600">Einstellungen</a>
-                        <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-gray-600">Profil</a>
-                        <a href="{% url 'logout' %}" class="block px-4 py-2 hover:bg-gray-600">Abmelden</a>
+    <header class="bg-gradient-to-r from-gray-800 to-gray-700 shadow-lg py-4 sm:py-6 px-4 sm:px-6 w-full">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-6">
+                <a href="{% url 'core:index' %}" class="logo">
+                    <img src="{% static 'images/logo.jpg' %}" alt="Logo" class="h-20 sm:h-24 rounded-md">
+                </a>
+                <nav class="flex space-x-6 sm:space-x-8 text-base sm:text-xl">
+                    <a href="{% url 'core:index' %}" class="nav-link text-[#F1FAEE] hover:text-[#4CAF50] font-medium transition-colors">Home</a>
+                    <a href="{% url 'core:catalog' %}" class="nav-link text-[#F1FAEE] hover:text-[#4CAF50] font-medium transition-colors">Katalog</a>
+                    <a href="{% url 'core:upload_page' %}" class="nav-link text-[#F1FAEE] hover:text-[#4CAF50] font-medium transition-colors">Upload</a>
+                    <a href="{% url 'core:about' %}" class="nav-link text-[#4CAF50] font-semibold transition-colors">Über Uns</a>
+                </nav>
+            </div>
+            <div id="user-section">
+                {% if user.is_authenticated %}
+                    <div class="dropdown relative">
+                        <button onclick="toggleDropdown(event)" class="text-[#F1FAEE] hover:text-[#4CAF50] flex items-center focus:outline-none space-x-3">
+                            <span class="text-xl">👤</span>
+                            <span class="text-base sm:text-lg">{{ user.username }}</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div class="dropdown-content">
+                            <a href="{% url 'core:settings' %}" class="block px-4 py-3 text-base hover:bg-gray-600 rounded">Einstellungen</a>
+                            <a href="{% url 'accounts:profile' %}" class="block px-4 py-3 text-base hover:bg-gray-600 rounded">Profil</a>
+                            <a href="{% url 'accounts:logout' %}" class="block px-4 py-3 text-base hover:bg-gray-600 rounded">Abmelden</a>
+                        </div>
                     </div>
-                </div>
-            {% else %}
-                <button id="login-btn" class="text-[#F1FAEE] hover:text-[#4CAF50]">Login</button>
-            {% endif %}
+                {% else %}
+                    <button id="login-btn" class="text-base sm:text-lg text-[#F1FAEE] hover:text-[#4CAF50] font-medium transition-colors">Login</button>
+                {% endif %}
+            </div>
         </div>
+    </header>
+
     </header>
 
     <!-- Main Content -->
