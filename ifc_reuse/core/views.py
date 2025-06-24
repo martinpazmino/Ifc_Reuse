@@ -39,8 +39,36 @@ def categories(request):
         # use case-insensitive match to avoid issues with capitalization in the database
         components_qs = components_qs.filter(component_type__iexact=selected_category)
 
+    search_query = request.GET.get('q', '').strip().lower()
+
+    components_list = list(components_qs)
+
+    if search_query:
+        filtered = []
+        for comp in components_list:
+            match_strs = [
+                comp.component_type or '',
+                comp.storey or '',
+                comp.material_name or '',
+                comp.global_id or '',
+                comp.ifc_file.project_name or '',
+                comp.ifc_file.name or '',
+            ]
+            match = any(search_query in s.lower() for s in match_strs)
+            if not match:
+                json_path = os.path.join(settings.MEDIA_ROOT, comp.json_file_path)
+                try:
+                    with open(json_path, 'r', encoding='utf-8') as f:
+                        if search_query in f.read().lower():
+                            match = True
+                except Exception:
+                    pass
+            if match:
+                filtered.append(comp)
+        components_list = filtered
+
     categories = {}
-    for component in components_qs:
+    for component in components_list:
         cat = component.component_type or 'Unknown'
         info = {
             'name': component.material_name or 'Unnamed',
@@ -65,6 +93,7 @@ def categories(request):
             'favorite_global_ids': favorite_global_ids,
             'available_categories': available_categories,
             'selected_category': selected_category,
+            'search_query': request.GET.get('q', ''),
         },
     )
 
