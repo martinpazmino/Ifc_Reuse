@@ -282,9 +282,10 @@ async function checkAndShowPassport(globalId) {
 document.addEventListener('DOMContentLoaded', () => {
 document.querySelectorAll('.component-item').forEach(item => {
     item.addEventListener('click', async (e) => {
+        const globalId = item.dataset.globalId;
         if (e.target.closest('.favorite-icon')) {
-            const globalId = e.target.closest('.favorite-icon').dataset.globalId;
-            await toggleFavorite(globalId);
+            const favId = e.target.closest('.favorite-icon').dataset.globalId;
+            await toggleFavorite(favId);
             return;
         }
 
