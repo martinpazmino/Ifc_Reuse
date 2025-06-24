@@ -349,7 +349,7 @@
                 {% endfor %}
             </div>
         {% endif %}
-        <form method="get" class="flex justify-center mb-6">
+        <form method="get" class="flex justify-center mb-6 space-x-2">
             <label for="category-filter" class="mr-2 text-[#F1FAEE]">Kategorie:</label>
             <select name="category" id="category-filter" onchange="this.form.submit()" class="bg-gray-700 text-[#F1FAEE] rounded px-2 py-1">
                 <option value="">Alle Kategorien</option>
@@ -357,8 +357,10 @@
                     <option value="{{ cat }}" {% if cat == selected_category %}selected{% endif %}>{{ cat }}</option>
                 {% endfor %}
             </select>
-            {% if selected_category %}
-                <a href="{% url 'core:catalog' %}" class="ml-2 text-[#4CAF50] hover:underline">Zurücksetzen</a>
+            <input type="text" name="q" placeholder="Suche..." value="{{ search_query }}" class="bg-gray-700 text-[#F1FAEE] rounded px-2 py-1" />
+            <button type="submit" class="bg-[#4CAF50] text-[#F1FAEE] px-2 py-1 rounded">Suchen</button>
+            {% if selected_category or search_query %}
+                <a href="{% url 'core:catalog' %}" class="text-[#4CAF50] hover:underline">Zurücksetzen</a>
             {% endif %}
         </form>
         {% if categories %}
