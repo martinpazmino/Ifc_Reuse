@@ -279,6 +279,7 @@ async function checkAndShowPassport(globalId) {
 }
 
 
+document.addEventListener('DOMContentLoaded', () => {
 document.querySelectorAll('.component-item').forEach(item => {
     item.addEventListener('click', async (e) => {
         if (e.target.closest('.favorite-icon')) {
@@ -400,22 +401,25 @@ document.querySelectorAll('.component-item').forEach(item => {
         }
     });
 });
+});
 
-document.querySelectorAll('.component-item').forEach(async item => {
-    const globalId = item.dataset.globalId;
-    try {
-        const response = await fetch(`${commentsUrlBase}?global_id=${globalId}`);
-        if (response.ok) {
-            const comments = await response.json();
-            const iconsWrapper = document.querySelector(`.icons-wrapper[data-global-id="${globalId}"]`);
-            if (iconsWrapper) {
-                iconsWrapper.dataset.hasComments = comments.length > 0;
-                iconsWrapper.classList.toggle('has-comments', comments.length > 0);
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.component-item').forEach(async item => {
+        const globalId = item.dataset.globalId;
+        try {
+            const response = await fetch(`${commentsUrlBase}?global_id=${globalId}`);
+            if (response.ok) {
+                const comments = await response.json();
+                const iconsWrapper = document.querySelector(`.icons-wrapper[data-global-id="${globalId}"]`);
+                if (iconsWrapper) {
+                    iconsWrapper.dataset.hasComments = comments.length > 0;
+                    iconsWrapper.classList.toggle('has-comments', comments.length > 0);
+                }
             }
+        } catch (error) {
+            console.error('Error checking comments:', error);
         }
-    } catch (error) {
-        console.error('Error checking comments:', error);
-    }
+    });
 });
 
 document.addEventListener('DOMContentLoaded', () => {
