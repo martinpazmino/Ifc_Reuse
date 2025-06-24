@@ -25,6 +25,12 @@ pip-wheel-metadata/
 .cache/
 .pytest_cache/
 migrations/
+*.migration_backup
+
+# Test- und Debugging-Dateien
+htmlcov/
+.tox/
+.coverage.*
 
 # Django static and media
 staticfiles/
@@ -43,11 +49,21 @@ frontend/.env
 frontend/.env.local
 frontend/.env.*.local
 
+# === Filter-spezifische Dateien (anpassen nach Bedarf) ===
+cache/
+tmp/
+ifc_temp/
+*.json
+*.csv
+*.cache
+*.ifc_processed
+
 # === IDEs / SYSTEM FILES ===
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
+ehthumbs.db
 *.swp
 *~
 *.bak
@@ -56,3 +72,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# === SICHERHEIT ===
+*.key
+*.credentials
+
+# === BUILD / DEPLOYMENT ===
+*.dockerignore
+Dockerfile*
+docker-compose*.yml
+*.tar
