@@ -26,9 +26,19 @@ def catalog(request):
     return render(request, "reuse/catalog.html")
 
 def categories(request):
-    components = ReusableComponent.objects.select_related('ifc_file').all()
+    components_qs = ReusableComponent.objects.select_related('ifc_file').all()
+    available_categories = (
+        ReusableComponent.objects.order_by('component_type')
+        .values_list('component_type', flat=True)
+        .distinct()
+    )
+
+    selected_category = request.GET.get('category')
+    if selected_category:
+        components_qs = components_qs.filter(component_type=selected_category)
+
     categories = {}
-    for component in components:
+    for component in components_qs:
         cat = component.component_type or 'Unknown'
         info = {
             'name': component.material_name or 'Unnamed',
@@ -45,11 +55,16 @@ def categories(request):
             Favorite.objects.filter(user=request.user).values_list('component__global_id', flat=True)
         )
 
-    return render(request, 'reuse/catalog.html', {
-        'categories': categories,
-        'components': components,
-        'favorite_global_ids': favorite_global_ids
-    })
+    return render(
+        request,
+        'reuse/catalog.html',
+        {
+            'categories': categories,
+            'favorite_global_ids': favorite_global_ids,
+            'available_categories': available_categories,
+            'selected_category': selected_category,
+        },
+    )
 
 def catalog_api(request):
     components = ReusableComponent.objects.select_related('ifc_file').all()
