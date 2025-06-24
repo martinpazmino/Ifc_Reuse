@@ -95,7 +95,46 @@ function loadOBJModel(globalId) {
 
 // Initialize viewer after DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    initViewer();
+    initViewer();  // Initialize your 3D viewer only once
+
+    document.querySelectorAll('.component-item').forEach(item => {
+        item.addEventListener('click', async (e) => {
+            const globalId = item.dataset.globalId;
+            const modelId = item.dataset.modelId;
+
+            if (e.target.closest('.favorite-icon')) {
+                const favId = e.target.closest('.favorite-icon').dataset.globalId;
+                await toggleFavorite(favId);
+                return;
+            }
+
+            document.querySelectorAll('.component-item').forEach(i => i.classList.remove('selected'));
+            item.classList.add('selected');
+
+            const jsonPath = `/media/reusable_components/${globalId}.json`;
+            const name = item.dataset.name;
+
+            try {
+                const response = await fetch(jsonPath);
+                if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+                const data = await response.json();
+
+                document.getElementById('element-name').textContent = data.Name?.value || name || 'N/A';
+                document.getElementById('element-type').textContent = data.type || 'N/A';
+                // (… fill in rest of your fields as before …)
+
+                await loadComments(globalId);
+                await checkAndShowPassportExtra(globalId, modelId);
+
+                document.getElementById('comment-submit').onclick = () => submitComment(globalId);
+                document.getElementById('details-panel').classList.add('show');
+
+                setTimeout(() => loadOBJModel(globalId), 100);
+            } catch (error) {
+                console.error('Error fetching component details:', error);
+            }
+        });
+    });
 });
 
 
@@ -283,6 +322,8 @@ document.addEventListener('DOMContentLoaded', () => {
 document.querySelectorAll('.component-item').forEach(item => {
     item.addEventListener('click', async (e) => {
         const globalId = item.dataset.globalId;
+        const modelId = item.dataset.modelId;
+
         if (e.target.closest('.favorite-icon')) {
             const favId = e.target.closest('.favorite-icon').dataset.globalId;
             await toggleFavorite(favId);
@@ -353,7 +394,7 @@ document.querySelectorAll('.component-item').forEach(item => {
             }
 
             await loadComments(globalId);
-            await checkAndShowPassport(globalId);
+            await checkAndShowPassportExtra(globalId, modelId);
 
             try {
 
@@ -403,7 +444,30 @@ document.querySelectorAll('.component-item').forEach(item => {
     });
 });
 });
-
+async function checkAndShowPassportExtra(globalId, modelId) {
+    const pdfUrl = `/media/passports/${globalId}.pdf`;
+    try {
+        const response = await fetch(pdfUrl, { method: 'HEAD' });
+        if (response.ok) {
+            document.getElementById('pdf-download-link').href = pdfUrl;
+            document.getElementById('pdf-download-section').style.display = 'block';
+        } else {
+            // If PDF doesn't exist, try to generate it
+            await generatePassport(globalId, modelId);
+            // After generation, try again
+            const newResponse = await fetch(pdfUrl, { method: 'HEAD' });
+            if (newResponse.ok) {
+                document.getElementById('pdf-download-link').href = pdfUrl;
+                document.getElementById('pdf-download-section').style.display = 'block';
+            } else {
+                document.getElementById('pdf-download-section').style.display = 'none';
+            }
+        }
+    } catch (err) {
+        console.error('Error checking/generating PDF:', err);
+        document.getElementById('pdf-download-section').style.display = 'none';
+    }
+}
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.component-item').forEach(async item => {
         const globalId = item.dataset.globalId;
