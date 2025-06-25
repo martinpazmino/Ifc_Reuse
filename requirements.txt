@@ -1,0 +1,4 @@
+Django==4.2.3
+djangorestframework==3.15.1
+django-cors-headers==4.3.1
+ifcopenshell==0.8.1.post1
