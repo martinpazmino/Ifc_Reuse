@@ -343,6 +343,10 @@ document.querySelectorAll('.component-item').forEach(item => {
             projectEl.textContent = item.dataset.projectName || 'N/A';
             projectEl.classList.toggle('na', !item.dataset.projectName);
 
+            const locationEl = document.getElementById('element-location');
+            locationEl.textContent = item.dataset.location || 'N/A';
+            locationEl.classList.toggle('na', !item.dataset.location);
+
             const uploadedEl = document.getElementById('element-uploaded');
             uploadedEl.textContent = item.dataset.uploaded || 'N/A';
             uploadedEl.classList.toggle('na', !item.dataset.uploaded);
