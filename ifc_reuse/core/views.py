@@ -76,6 +76,7 @@ def categories(request):
             'project_name': component.ifc_file.project_name,
             'uploaded_at': component.uploaded_at,
             'model_id': component.ifc_file_id,
+            'location': component.ifc_file.location,
         }
         categories.setdefault(cat, []).append(info)
 
@@ -108,6 +109,7 @@ def catalog_api(request):
             'project_name': component.ifc_file.project_name,
             'uploaded_at': component.uploaded_at,
             'model_id': component.ifc_file_id,
+            'location': component.ifc_file.location,
         }
 
         categories.setdefault(cat, []).append(info)

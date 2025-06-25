@@ -417,6 +417,7 @@
                             data-global-id="{{ comp.global_id }}"
                             data-model-id="{{ comp.model_id }}"
                             data-project-name="{{ comp.project_name }}"
+                            data-location="{{ comp.location }}"
                             data-uploaded="{{ comp.uploaded_at|date:'d.m.Y' }}"
                             data-has-comments="false"
                             data-is-favorite="{% if comp.global_id in favorite_global_ids %}true{% else %}false{% endif %}">
@@ -467,6 +468,9 @@
                 </div>
                 <div class="property">
                     <strong>Projekt:</strong> <span id="element-project" class="na">N/A</span>
+                </div>
+                <div class="property">
+                    <strong>Standort:</strong> <span id="element-location" class="na">N/A</span>
                 </div>
                 <div class="property">
                     <strong>Hochgeladen:</strong> <span id="element-uploaded" class="na">N/A</span>
