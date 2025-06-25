@@ -259,6 +259,14 @@ def upload_ifc(request):
         user=request.user if request.user.is_authenticated else None
     )
 
+    if not upload.location:
+        from .utils import extract_ifc_location
+
+        auto_loc = extract_ifc_location(upload.file.path)
+        if auto_loc:
+            upload.location = auto_loc
+            upload.save(update_fields=["location"])
+
     return JsonResponse(
         {
             "status": "uploaded",

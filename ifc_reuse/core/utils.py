@@ -16,6 +16,34 @@ IFCCONVERT_PATH = r"C:\IfcConvert\IfcConvert.exe"
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ifc_reuse.settings")
 django.setup()
+
+
+def extract_ifc_location(ifc_path: str) -> str:
+    """Return a short textual location from an IFC file if available."""
+    try:
+        model = ifcopenshell.open(ifc_path)
+    except Exception:
+        return ""
+
+    try:
+        site = next(iter(model.by_type("IfcSite")), None)
+    except Exception:
+        site = None
+
+    if not site:
+        return ""
+
+    try:
+        addr = getattr(site, "Address", None)
+        if addr:
+            parts = [addr.Town, addr.Region, addr.Country]
+            loc = ", ".join(p for p in parts if p)
+            if loc:
+                return loc
+        return getattr(site, "LongName", "") or getattr(site, "Name", "") or ""
+    except Exception:
+        return ""
+
 def get_element_info(ifc_path: str, express_id: int) -> Dict[str, object]:
     """Return basic IFC metadata for the given element."""
 
