@@ -450,13 +450,13 @@
                 <div class="property">
                     <strong>Typ:</strong> <span id="element-type" class="na">N/A</span>
                 </div>
-                <div class="property">
+                <div class="property hidden">
                     <strong>Maße:</strong> <span id="element-dimensions" class="na">N/A</span>
                 </div>
                 <div class="property">
                     <strong>Material:</strong> <span id="element-material" class="na">N/A</span>
                 </div>
-                <div class="property">
+                <div class="property hidden">
                     <strong>Gewicht:</strong> <span id="element-weight" class="na">N/A</span>
                 </div>
                 <div class="property">
@@ -545,6 +545,22 @@
     </script>
 
     <script src="{% static 'frontend/catalog-viewer.iife.js' %}?v={{ BUILD_TIMESTAMP }}"></script>
+
+    <script>
+        function closeDetailsPanel() {
+            document.getElementById('details-panel').classList.remove('show');
+            document.querySelectorAll('.component-item').forEach(item => item.classList.remove('selected'));
+        }
+
+        document.addEventListener('click', (e) => {
+            if (e.target && e.target.id === 'author-profile-button') {
+                const href = e.target.getAttribute('href');
+                if (href && href !== '#') {
+                    window.location.href = href;
+                }
+            }
+        });
+    </script>
 
     <script>
         async function generatePassport(globalId, modelId) {
