@@ -99,20 +99,32 @@ def categories(request):
     )
 
 def catalog_api(request):
-    components = ReusableComponent.objects.select_related('ifc_file').all()
-    categories = {}
-    for component in components:
-        cat = component.component_type or 'Unknown'
-        info = {
-            'name': component.component_type or 'Unnamed',
-            'global_id': component.global_id or component.json_file_path.split('/')[-1].replace('.json', ''),
-            'project_name': component.ifc_file.project_name,
-            'uploaded_at': component.uploaded_at,
-            'model_id': component.ifc_file_id,
-            'location': component.ifc_file.location,
-        }
+    qs = (ReusableComponent.objects
+            .select_related('ifc_file')
+            .values(
+                'component_type',
+                'global_id',
+                'json_file_path',
+                'uploaded_at',
+                'ifc_file_id',
+                'ifc_file__project_name',
+                'ifc_file__location',
+            ))
 
+    categories = {}
+    for row in qs:
+        cat = row['component_type'] or 'Unknown'
+        info = {
+            'name':         row['component_type'] or 'Unnamed',
+            'global_id':    row['global_id']
+                             or row['json_file_path'].rsplit('/',1)[-1].removesuffix('.json'),
+            'project_name': row['ifc_file__project_name'],
+            'uploaded_at':  row['uploaded_at'],
+            'model_id':     row['ifc_file_id'],
+            'location':     row['ifc_file__location'],   # ← here!
+        }
         categories.setdefault(cat, []).append(info)
+
     return JsonResponse(categories)
 
 def upload_page(request):
