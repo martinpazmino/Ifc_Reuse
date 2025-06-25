@@ -376,7 +376,7 @@
                         </div>
                     </div>
                 {% else %}
-                    <a href="{% url 'accounts:login' %}" class="text-base sm:text-lg text-[#F1FAEE] hover:text-[#4CAF50] font-medium transition-colors">Login</a>
+                    <button id="login-btn" class="text-base sm:text-lg text-[#F1FAEE] hover:text-[#4CAF50] font-medium transition-colors">Login</button>
                 {% endif %}
             </div>
         </div>
@@ -558,6 +558,41 @@
                 if (href && href !== '#') {
                     window.location.href = href;
                 }
+            }
+        });
+    </script>
+
+    <script>
+        function toggleDropdown(event) {
+            event.stopPropagation();
+            const dropdown = event.currentTarget.closest('.dropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        document.addEventListener('click', (e) => {
+            const dropdown = document.querySelector('.dropdown');
+            if (dropdown && !e.target.closest('.dropdown')) {
+                dropdown.classList.remove('active');
+            }
+
+            const modalOverlay = document.getElementById('modal-overlay');
+            if (e.target.id === 'login-btn') {
+                modalOverlay.classList.remove('hidden');
+                modalOverlay.classList.add('active');
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('register-form').classList.add('hidden');
+            }
+            if (e.target.id === 'close-modal' || e.target.id === 'modal-overlay') {
+                modalOverlay.classList.remove('active');
+                setTimeout(() => modalOverlay.classList.add('hidden'), 300);
+            }
+            if (e.target.id === 'show-register') {
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('register-form').classList.remove('hidden');
+            }
+            if (e.target.id === 'show-login') {
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('register-form').classList.add('hidden');
             }
         });
     </script>
