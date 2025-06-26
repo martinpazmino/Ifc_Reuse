@@ -99,6 +99,7 @@ STATICFILES_DIRS = [
     BASE_DIR / "static",
     BASE_DIR / "ifc_reuse/static",
     BASE_DIR / "frontend/dist",
+    BASE_DIR / "core/static",
 ]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
