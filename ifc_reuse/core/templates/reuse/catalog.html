@@ -548,7 +548,13 @@
         const toggleFavoriteUrl = "{% url 'core:toggle_favorite' %}";
     </script>
 
-    <script src="{% static 'frontend/catalog-viewer.iife.js' %}?v={{ BUILD_TIMESTAMP }}"></script>
+    {% if debug %}
+      <!-- En modo dev usamos el archivo original -->
+      <script type="module" src="http://localhost:5173/catalog-viewer.js"></script>
+    {% else %}
+      <!-- En producción usamos el bundle iife compilado -->
+      <script type="module" src="{% static 'frontend/catalog-viewer.iife.js' %}?v={{ BUILD_TIMESTAMP }}"></script>
+    {% endif %}
 
     <script>
         function closeDetailsPanel() {

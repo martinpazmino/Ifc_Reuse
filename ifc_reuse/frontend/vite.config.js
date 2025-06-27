@@ -15,6 +15,11 @@ export default defineConfig({
       'three/examples/jsm/loaders/MTLLoader.js': mtlLoader,
     }),
   ],
+  server: {
+    host: true,            // 👈 importante para que funcione en Docker
+    port: 5173,            // 👈 asegúrate de exponer este puerto en docker-compose
+    strictPort: true,
+  },
   build: {
     outDir: '../static/frontend',
     emptyOutDir: true,

@@ -204,32 +204,40 @@ def save_metadata_and_create_component(
 
 
 
-
 def extract_component_files(ifc_path: str, express_id: int, global_id: str):
-    """Extract a single IFC element and convert to OBJ using IfcConvert in Docker."""
+    """
+    Extract a single IFC element and convert to OBJ using IfcConvert.
+    """
 
-    # Create output folders
+    # 📁 Preparar carpetas de salida
     fragments_dir = os.path.join(settings.MEDIA_ROOT, 'fragments')
     temp_ifcs_dir = os.path.join(settings.MEDIA_ROOT, 'temp_ifcs')
     os.makedirs(fragments_dir, exist_ok=True)
     os.makedirs(temp_ifcs_dir, exist_ok=True)
 
-    # Define paths
+    # 🛣️ Definir rutas temporales
     temp_ifc_path = os.path.join(temp_ifcs_dir, f"{global_id}.ifc")
     output_obj_path = os.path.join(fragments_dir, f"{global_id}.obj")
 
-    # Load full IFC and extract element
+    # 📦 Cargar IFC completo y extraer el elemento por ID
     model = ifcopenshell.open(ifc_path)
     element = model.by_id(express_id)
     if not element:
-        raise ValueError(f"Element with expressID {express_id} not found")
+        raise ValueError(f"❌ Element with expressID {express_id} not found in {ifc_path}")
 
-    # Create mini IFC file with single element
+    # 🧱 Crear mini IFC con el único elemento
     mini_ifc = ifcopenshell.file(schema=model.schema)
+
+    # ⚠️ Agregar contexto mínimo (opcional pero recomendado)
+    for ctx_type in ["IfcProject", "IfcSite", "IfcBuilding", "IfcBuildingStorey"]:
+        items = model.by_type(ctx_type)
+        if items:
+            mini_ifc.add(items[0])
+
     mini_ifc.add(element)
     mini_ifc.write(temp_ifc_path)
 
-    # Run Dockerized IfcConvert
+    # 🛠️ Ejecutar IfcConvert directamente
     docker_cmd = [
         "IfcConvert",
         temp_ifc_path,
@@ -238,11 +246,23 @@ def extract_component_files(ifc_path: str, express_id: int, global_id: str):
     ]
 
     try:
-        subprocess.run(docker_cmd, check=True)
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"❌ IfcConvert failed: {e.stderr}") from e
+        result = subprocess.run(
+            docker_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+
+        if result.returncode != 0:
+            print("❌ IfcConvert STDOUT:\n", result.stdout)
+            print("❌ IfcConvert STDERR:\n", result.stderr)
+            raise RuntimeError(f"❌ IfcConvert failed:\n{result.stderr or result.stdout or 'Unknown error'}")
+
+        print(f"✅ OBJ file created at {output_obj_path}")
+    except Exception as e:
+        raise RuntimeError(f"❌ Extraction failed: {e}")
     finally:
-        # Cleanup temporary IFC file
+        # 🧹 Eliminar IFC temporal solo si fue creado
         if os.path.exists(temp_ifc_path):
             os.remove(temp_ifc_path)
 
