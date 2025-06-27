@@ -92,13 +92,13 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 # Full path to your IfcConvert executable
-IFCCONVERT_PATH = r"C:\IfcConvert\IfcConvert.exe"
+
+IFC_TEMP_VOLUME = os.path.join(BASE_DIR, "media")
+
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    BASE_DIR / "static",
-    BASE_DIR / "ifc_reuse/static",
-    BASE_DIR / "frontend/dist",
+    BASE_DIR /"frontend" / "dist",
 ]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 

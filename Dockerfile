@@ -1,72 +1,47 @@
-# Stage 1: Build frontend
-FROM node:18 as frontend-builder
+FROM python:3.11-slim
 
-WORKDIR /app/frontend
-
-# Copy frontend package files
-COPY ifc_reuse/frontend/package*.json ./
-
-RUN npm install
-
-COPY ifc_reuse/frontend/ ./
-
-RUN npm run build
-
-
-# Stage 2: Backend with full IfcOpenShell build
-FROM python:3.11-slim as backend
-
-# Install system dependencies required to build IfcOpenShell
+# 1️⃣ Instalar dependencias del sistema
 RUN apt-get update && apt-get install -y \
-    git \
-    cmake \
-    g++ \
-    libopencascade-dev \
-    libboost-all-dev \
-    libtbb-dev \
-    libeigen3-dev \
-    libxml2-dev \
-    libgl1-mesa-dev \
-    libglu1-mesa-dev \
-    wget \
+    build-essential \
+    curl \
+    libgl1 \
+    libglu1-mesa \
+    libhdf5-dev \
+    nodejs \
+    npm \
     unzip \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean
 
-# Clone and build IfcOpenShell
-WORKDIR /src
-RUN git clone https://github.com/IfcOpenShell/IfcOpenShell.git
-
-WORKDIR /src/IfcOpenShell
-RUN cmake -DBUILD_IFC_CONVERT=ON -DCMAKE_BUILD_TYPE=Release .
-RUN make -j$(nproc)
-
-# Install IfcOpenShell Python bindings
-RUN pip install ./python
-
-# Set correct path for IfcConvert binary
-ENV IFCCONVERT_PATH=/src/IfcOpenShell/IfcConvert
-
-# Application code
+# 2️⃣ Crear directorio de trabajo
 WORKDIR /app
 
-# Copy backend code
-COPY ifc_reuse/ ./ifc_reuse/
+# 3️⃣ Copiar todo el proyecto
+COPY . .
 
-# Copy requirements file
-COPY requirements.txt ./
+# 4️⃣ Instalar IfcOpenShell desde el .whl
+COPY ifcopenshell-0.8.3a250625-py311-none-manylinux_2_31_x86_64.whl /tmp/
+RUN pip install /tmp/ifcopenshell-*.whl
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# 5️⃣ Instalar otros requisitos de Python
+RUN pip install -r requirements.txt
 
-# Copy frontend build from first stage
-COPY --from=frontend-builder /app/frontend/dist/ ./ifc_reuse/frontend/dist/
+# 6️⃣ Instalar y construir el frontend con Vite
+WORKDIR /app/ifc_reuse/frontend
+RUN npm install
+RUN npm run build
 
-# Collect Django static files
-WORKDIR /app/ifc_reuse
-RUN python manage.py collectstatic --noinput
+# 7️⃣ Mover frontend generado a carpeta static de Django
+RUN cp -r dist/* /app/ifc_reuse/static/
 
-# Expose Django server port
-EXPOSE 8000
+# 8️⃣ Registrar IfcConvert como binario ejecutable
+COPY tools/IfcConvert /usr/local/bin/IfcConvert
+RUN chmod +x /usr/local/bin/IfcConvert
 
-# Start Django server
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# 9️⃣ Volver al backend
+WORKDIR /app
+
+# 🔟 Exponer puerto
+EXPOSE 8080
+
+# 🚀 Iniciar Django
+CMD ["python", "ifc_reuse/manage.py", "runserver", "0.0.0.0:8080"]

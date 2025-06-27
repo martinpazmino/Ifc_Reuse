@@ -12,7 +12,8 @@ from django.core.files.storage import default_storage
 
 from .models import UploadedIFC, ReusableComponent
 
-IFCCONVERT_PATH = r"C:\IfcConvert\IfcConvert.exe"
+
+
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ifc_reuse.settings")
 django.setup()
@@ -205,7 +206,7 @@ def save_metadata_and_create_component(
 
 
 def extract_component_files(ifc_path: str, express_id: int, global_id: str):
-    """Extract a single IFC element and convert to OBJ using IfcConvert."""
+    """Extract a single IFC element and convert to OBJ using IfcConvert in Docker."""
 
     # Create output folders
     fragments_dir = os.path.join(settings.MEDIA_ROOT, 'fragments')
@@ -213,7 +214,7 @@ def extract_component_files(ifc_path: str, express_id: int, global_id: str):
     os.makedirs(fragments_dir, exist_ok=True)
     os.makedirs(temp_ifcs_dir, exist_ok=True)
 
-    # Define output file paths
+    # Define paths
     temp_ifc_path = os.path.join(temp_ifcs_dir, f"{global_id}.ifc")
     output_obj_path = os.path.join(fragments_dir, f"{global_id}.obj")
 
@@ -228,20 +229,20 @@ def extract_component_files(ifc_path: str, express_id: int, global_id: str):
     mini_ifc.add(element)
     mini_ifc.write(temp_ifc_path)
 
-    # Call IfcConvert on mini IFC
-    command = [
-        settings.IFCCONVERT_PATH,
+    # Run Dockerized IfcConvert
+    docker_cmd = [
+        "IfcConvert",
         temp_ifc_path,
         output_obj_path,
         "--use-element-guids"
     ]
 
     try:
-        subprocess.run(command, check=True)
+        subprocess.run(docker_cmd, check=True)
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"IfcConvert failed: {e.stderr}") from e
+        raise RuntimeError(f"❌ IfcConvert failed: {e.stderr}") from e
     finally:
-        # Cleanup temporary IFC
+        # Cleanup temporary IFC file
         if os.path.exists(temp_ifc_path):
             os.remove(temp_ifc_path)
 
