@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IFC Reuse</title>
+    <title>Profil - IFC Reuse Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{% static 'styles.css' %}">
     <style>
@@ -35,7 +35,7 @@
             transform: translateY(-4px);
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
         }
-        /* Suchleiste */
+        /* Input-Felder */
         .search-input {
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
@@ -67,6 +67,66 @@
         .nav-link:hover::after {
             width: 100%;
         }
+        /* Modal Animation */
+        .modal-overlay {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+        }
+        .modal-content {
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+        /* Tab Styling */
+        .tab-link {
+            position: relative;
+        }
+        .tab-link.active::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            bottom: -2px;
+            left: 0;
+            background-color: #4CAF50;
+        }
+        /* Marco para la imagen de arquitectura */
+        .architecture-image-frame {
+            position: relative;
+            padding: 6px;
+            background: linear-gradient(to bottom right, #2d3748, #4a5568);
+            border: 3px double #4CAF50;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .architecture-image-frame:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+        /* Imagen de perfil en el menú */
+        .profile-menu-image {
+            transition: transform 0.3s ease;
+        }
+        .profile-menu-image:hover {
+            transform: scale(1.1);
+        }
+        /* Accordion Content */
+        .accordion-content {
+            display: none;
+            padding: 0 1.5rem 1.5rem 1.5rem;
+        }
+        .accordion.active .accordion-content {
+            display: block;
+        }
+        .accordion.active .accordion > button > svg {
+            transform: rotate(180deg);
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-[#F1FAEE] min-h-screen flex flex-col">
@@ -87,7 +147,11 @@
                 {% if user.is_authenticated %}
                     <div class="dropdown relative">
                         <button onclick="toggleDropdown(event)" class="text-[#F1FAEE] hover:text-[#4CAF50] flex items-center focus:outline-none space-x-3">
-                            <span class="text-xl">👤</span>
+                            {% if user.profile.image and user.profile.image.url != '/media/default_profile.jpg' %}
+                                <img src="{{ user.profile.image.url }}" alt="Profilbild" class="w-10 h-10 rounded-full border-2 border-[#4CAF50] object-cover profile-menu-image">
+                            {% else %}
+                                <span class="text-xl">👤</span>
+                            {% endif %}
                             <span class="text-base sm:text-lg">{{ user.username }}</span>
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -149,6 +213,15 @@
                   </p>
                 </div>
               </a>
+              <a href="{% url 'core:about' %}" class="card bg-gray-800 rounded-xl p-6 flex items-center space-x-4">
+                    <svg class="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4a4 4 0 110 8 4 4 0 010-8zm-7 8a4 4 0 110 8 4 4 0 010-8zm14 0a4 4 0 110 8 4 4 0 010-8z"></path>
+                    </svg>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold">Über Uns</h3>
+                        <p class="text-gray-300 mt-1 text-sm">Erfahre mehr über unsere Mission und unser Team.</p>
+                    </div>
+              </a>
             </div>
 
             <!-- Right: Video -->
@@ -160,6 +233,56 @@
               </video>
             </div>
           </section>
+        </div>
+
+        <!-- Q&A Sektion -->
+        <section class="mt-16">
+                <h2 class="text-2xl sm:text-3xl font-bold text-[#F1FAEE] text-center">Häufig gestellte Fragen</h2>
+                <div class="mt-8 space-y-4">
+                    <div class="accordion bg-gray-800 rounded-xl">
+                        <button class="w-full text-left p-6 flex justify-between items-center text-lg font-semibold text-[#F1FAEE] transition-colors" onclick="toggleAccordion(this)">
+                            Was ist die IFC Reuse Platform?
+                            <svg class="w-6 h-6 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div class="accordion-content">
+                            <video controls class="rounded-md h-40 sm:h-60 w-full">
+                                <source src="{% static 'images/IFC_reuse.mp4' %}" type="video/mp4">
+                                Dein Browser unterstützt dieses Videoformat nicht.
+                            </video>
+                        </div>
+                    </div>
+                    <div class="accordion bg-gray-800 rounded-xl">
+                        <button class="w-full text-left p-6 flex justify-between items-center text-lg font-semibold text-[#F1FAEE] transition-colors" onclick="toggleAccordion(this)">
+                            Wie kann ich eine IFC-Datei hochladen?
+                            <svg class="w-6 h-6 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div class="accordion-content">
+                            <video controls class="rounded-md h-40 sm:h-60 w-full">
+                                <source src="{% static 'images/2._Frage.mp4' %}" type="video/mp4">
+                                Dein Browser unterstützt dieses Videoformat nicht.
+                            </video>
+                        </div>
+                    </div>
+                    <div class="accordion bg-gray-800 rounded-xl">
+                        <button class="w-full text-left p-6 flex justify-between items-center text-lg font-semibold text-[#F1FAEE] transition-colors" onclick="toggleAccordion(this)">
+                            Welche Arten von Bauteilen kann ich finden?
+                            <svg class="w-6 h-6 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div class="accordion-content">
+                            <video controls class="rounded-md h-40 sm:h-60 w-full">
+                                <source src="{% static 'images/3._Frage.mp4' %}" type="video/mp4">
+                                Dein Browser unterstützt dieses Videoformat nicht.
+                            </video>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
       </main>
     <footer class="bg-gradient-to-r from-gray-800 to-gray-700 text-[#F1FAEE] py-6 mt-auto">
@@ -184,6 +307,19 @@
             const dropdown = document.querySelector('.dropdown');
             if (dropdown) dropdown.classList.remove('active');
         });
+
+        function toggleAccordion(button) {
+            const accordion = button.parentElement;
+            const isActive = accordion.classList.contains('active');
+            // Close all accordions
+            document.querySelectorAll('.accordion').forEach(acc => {
+                acc.classList.remove('active');
+            });
+            // Toggle the clicked accordion
+            if (!isActive) {
+                accordion.classList.add('active');
+            }
+        }
     </script>
 </body>
 </html>

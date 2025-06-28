@@ -100,6 +100,8 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR /"frontend" / "dist",
     BASE_DIR / "static",
+    BASE_DIR / "core/static",
+    BASE_DIR / "ifc_reuse/static",
 ]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
