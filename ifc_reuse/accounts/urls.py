@@ -10,4 +10,5 @@ urlpatterns = [
     path('upload_profile_image/', views.upload_profile_image, name='upload_profile_image'),
     path('edit_profile/', views.edit_profile, name='profile'),
     path('profile/<str:username>/', views.public_profile, name='public_profile'),
+    path('upload_architecture_image/', views.upload_architecture_image, name='upload_architecture_image'),
 ]

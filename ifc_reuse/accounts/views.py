@@ -64,3 +64,19 @@ def user_logout(request):
 def public_profile(request, username):
     user = get_object_or_404(User, username=username)
     return render(request, 'accounts/public_profile.html', {'user': user})
+
+@login_required
+def upload_architecture_image(request):
+    if request.method == 'POST':
+        profile = request.user.profile
+        architecture_image = request.FILES.get('architecture_image')
+        architecture_option = request.POST.get('architecture_option')
+        if architecture_image:
+            profile.architecture_image = architecture_image
+            profile.architecture_option = architecture_option
+            profile.save()
+            messages.success(request, "Architekturbild erfolgreich hochgeladen!")
+        else:
+            messages.error(request, "Bitte wähle ein Bild aus.")
+        return redirect('accounts:profile')
+    return redirect('accounts:profile')

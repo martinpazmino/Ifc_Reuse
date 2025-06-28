@@ -21,6 +21,27 @@
         .modal-bg {
             background: rgba(0, 0, 0, 0.6);
         }
+        /* Marco para la imagen de arquitectura */
+        .architecture-image-frame {
+            position: relative;
+            padding: 6px;
+            background: linear-gradient(to bottom right, #2d3748, #4a5568);
+            border: 3px double #4CAF50;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .architecture-image-frame:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+        /* Imagen de perfil en el menú */
+        .profile-menu-image {
+            transition: transform 0.3s ease;
+        }
+        .profile-menu-image:hover {
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-[#F1FAEE] min-h-screen flex flex-col">
@@ -36,10 +57,15 @@
             </nav>
         </div>
         <div id="user-section">
-            {% if user.is_authenticated %}
+            {% if request.user.is_authenticated %}
                 <div class="dropdown relative">
-                    <button onclick="toggleDropdown(event)" class="text-[#F1FAEE] hover:text-[#4CAF50] flex items-center focus:outline-none">
-                        👤 <span class="ml-1">{{ user.username }}</span>
+                    <button onclick="toggleDropdown(event)" class="text-[#F1FAEE] hover:text-[#4CAF50] flex items-center focus:outline-none space-x-3">
+                        {% if request.user.profile.image and request.user.profile.image.url != '/media/default_profile.jpg' %}
+                            <img src="{{ request.user.profile.image.url }}" alt="Profilbild" class="w-10 h-10 rounded-full border-2 border-[#4CAF50] object-cover profile-menu-image">
+                        {% else %}
+                            <span class="text-xl">👤</span>
+                        {% endif %}
+                        <span class="ml-1 text-base sm:text-lg">{{ request.user.username }}</span>
                         <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     <div class="dropdown-content bg-gray-700 rounded shadow-lg">
@@ -49,7 +75,7 @@
                     </div>
                 </div>
             {% else %}
-                <button id="login-btn" class="text-[#F1FAEE] hover:text-[#4CAF50]">Login</button>
+                <button id="login-btn" class="text-base sm:text-lg text-[#F1FAEE] hover:text-[#4CAF50]">Login</button>
             {% endif %}
         </div>
     </header>
@@ -62,18 +88,58 @@
 
         <!-- Perfil -->
         <div class="bg-gray-800 rounded-xl p-6 shadow-md">
-            <div class="flex flex-col md:flex-row items-center md:items-start mb-8">
-                <div class="flex-shrink-0">
-                    {% if user.profile.image %}
-                        <img src="{{ user.profile.image.url }}" alt="Profilbild" class="w-32 h-32 rounded-full border-2 border-[#4CAF50] object-cover">
-                    {% else %}
-                        <img src="{% static 'profile-placeholder.jpg' %}" alt="Profilbild" class="w-32 h-32 rounded-full border-2 border-[#4CAF50] object-cover">
-                    {% endif %}
+            <div class="flex flex-col md:flex-row md:space-x-6 mb-8">
+                <!-- Área de datos del perfil -->
+                <div class="flex flex-col items-center md:items-start flex-1">
+                    <div class="flex-shrink-0">
+                        {% if user.profile.image %}
+                            <img src="{{ user.profile.image.url }}" alt="Profilbild" class="w-32 h-32 rounded-full border-2 border-[#4CAF50] object-cover">
+                        {% else %}
+                            <img src="{% static 'profile-placeholder.jpg' %}" alt="Profilbild" class="w-32 h-32 rounded-full border-2 border-[#4CAF50] object-cover">
+                        {% endif %}
+                    </div>
+                    <div class="md:ml-6 mt-4 md:mt-0 text-center md:text-left">
+                        <h3 class="text-xl font-semibold">Benutzername: {{ user.username|default:'Benutzer' }}</h3>
+                        <p class="text-gray-400">E-Mail: {{ user.email|default:'Nicht angegeben' }}</p>
+                        <p class="text-gray-400">Registriert seit: {{ user.date_joined|date:'d.m.Y'|default:'01.01.2025' }}</p>
+                    </div>
                 </div>
-                <div class="md:ml-6 mt-4 md:mt-0 text-center md:text-left">
-                    <h3 class="text-xl font-semibold">Benutzername: {{ user.username|default:'Benutzer' }}</h3>
-                    <p class="text-gray-400">E-Mail: {{ user.email|default:'Nicht angegeben' }}</p>
-                    <p class="text-gray-400">Registriert seit: {{ user.date_joined|date:'d.m.Y'|default:'01.01.2025' }}</p>
+                <!-- Sección interactiva -->
+                <div class="flex-1 mt-6 md:mt-0 max-h-[450px]">
+                    <h3 class="text-lg font-semibold text-[#F1FAEE] mb-4">Lass die Leute dich ein bisschen besser kennenlernen</h3>
+                    {% if user.profile.architecture_option or user.profile.architecture_image %}
+                        <div class="space-y-4 mb-6">
+                            {% if user.profile.architecture_option %}
+                                <div>
+                                    <p class="text-sm text-gray-300 mb-2">Ausgewählte Option:</p>
+                                    <p class="w-full border border-gray-600 bg-gray-700 rounded-lg p-2 text-[#F1FAEE]">
+                                        {% if user.profile.architecture_option == 'beautiful' %}
+                                            Das schönste Gebäude, das ich je gesehen habe
+                                        {% elif user.profile.architecture_option == 'inspiring' %}
+                                            Ein Gebäude, das mich inspiriert
+                                        {% elif user.profile.architecture_option == 'dream' %}
+                                            Eine Art von Bauwerk, die ich gerne bauen würde
+                                        {% elif user.profile.architecture_option == 'favorite' %}
+                                            Ein Werk meines Lieblingsarchitekten / -ingenieurs
+                                        {% elif user.profile.architecture_option == 'creative' %}
+                                            Ein Ort, der meine Kreativität weckt
+                                        {% elif user.profile.architecture_option == 'dream_project' %}
+                                            Mein Traumprojekt
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            {% endif %}
+                            {% if user.profile.architecture_image %}
+                                <div class="mt-4">
+                                    <div class="architecture-image-frame">
+                                        <img src="{{ user.profile.architecture_image.url }}" alt="Architekturbild" class="w-full h-auto max-h-64 object-cover rounded-md">
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <p class="text-gray-400">Keine persönlichen Informationen verfügbar.</p>
+                    {% endif %}
                 </div>
             </div>
             <a href="{% url 'core:catalog' %}" class="block text-center text-[#4CAF50] hover:underline">Zurück zum Katalog</a>
