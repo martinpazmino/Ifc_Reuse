@@ -412,10 +412,9 @@
         {% if categories %}
             {% for cat, comps in categories.items %}
                 <h2 class="text-xl font-semibold mt-8">{{ cat }}</h2>
-                <ul class="flex flex-wrap gap-4 mt-4">
+                <ul class="mt-2 space-y-1">
                     {% for comp in comps %}
-                        <li class="bg-gray-800 shadow-md rounded-xl p-4 cursor-pointer hover:bg-gray-700 component-item
-                                   w-80 aspect-[3/1] flex items-center
+                        <li class="bg-gray-800 shadow-md rounded-lg p-2 cursor-pointer hover:bg-gray-700 component-item flex items-center
                                    {% if comp.global_id in favorite_global_ids %}border-2 border-[#4CAF50]{% endif %}"
                             data-json-path="{% static comp.global_id|add:'.json' %}"
                             data-name="{{ comp.name }}"
@@ -431,29 +430,26 @@
                             data-has-comments="false"
                             data-is-favorite="{% if comp.global_id in favorite_global_ids %}true{% else %}false{% endif %}">
 
-                            <span class="flex-grow text-white text-base font-medium break-words">
-                                {{ comp.name }}<br>
-                                <span class="text-sm opacity-70">{{ comp.global_id }}</span>
+                            <span class="flex-grow text-white break-words text-sm">
+                                {{ comp.name }} ({{ comp.global_id }})
                             </span>
 
                             <div class="icons-wrapper flex items-center ml-2" data-global-id="{{ comp.global_id }}">
-                                <svg class="favorite-icon w-6 h-6 {% if comp.global_id in favorite_global_ids %}favorited fill-current{% else %}fill-none{% endif %}"
+                                <svg class="favorite-icon w-5 h-5 {% if comp.global_id in favorite_global_ids %}favorited fill-current{% else %}fill-none{% endif %}"
                                      data-global-id="{{ comp.global_id }}"
                                      fill="none"
                                      stroke="currentColor"
                                      viewBox="0 0 24 24"
                                      xmlns="http://www.w3.org/2000/svg">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l2.286 7.028h7.397c.969 0 1.371 1.24.588 1.81l-5.984 4.347
-                                             2.286 7.028c.3 .921-.755 1.688-1.538 1.118l-5.984-4.347-5.984 4.347c-.783 .57-1.838-.197-1.538-1.118
-                                             l2.286-7.028-5.984-4.347c-.783-.57-.381-1.81 .588-1.81h7.397l2.286-7.028z">
+                                          d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l2.286 7.028h7.397c.969 0 1.371 1.24.588 1.81l-5.984 4.347 2.286 7.028c.3 .921-.755 1.688-1.538 1.118l-5.984-4.347-5.984 4.347c-.783 .57-1.838-.197-1.538-1.118l2.286-7.028-5.984-4.347c-.783-.57-.381-1.81 .588-1.81h7.397l2.286-7.028z">
                                     </path>
                                 </svg>
                             </div>
-                        </li>
+</li>
+
                     {% endfor %}
                 </ul>
-
             {% endfor %}
         {% else %}
             <p class="text-center text-gray-400">Keine Komponenten gefunden.</p>
