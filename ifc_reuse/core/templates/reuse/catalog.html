@@ -566,8 +566,13 @@
       <!-- En modo dev usamos el archivo original -->
       <script type="module" src="http://localhost:5173/catalog-viewer.js"></script>
     {% else %}
+      <!-- Bibliotecas necesarias desde CDN -->
+      <script src="https://unpkg.com/three@0.177.0/build/three.min.js"></script>
+      <script src="https://unpkg.com/three@0.177.0/examples/js/controls/OrbitControls.js"></script>
+      <script src="https://unpkg.com/three@0.177.0/examples/js/loaders/OBJLoader.js"></script>
+      <script src="https://unpkg.com/three@0.177.0/examples/js/loaders/MTLLoader.js"></script>
       <!-- En producción usamos el bundle iife compilado -->
-      <script type="module" src="{% static 'frontend/catalog-viewer.iife.js' %}?v={{ BUILD_TIMESTAMP }}"></script>
+      <script src="{% static 'frontend/catalog-viewer.iife.js' %}?v={{ BUILD_TIMESTAMP }}"></script>
     {% endif %}
 
     <script>
