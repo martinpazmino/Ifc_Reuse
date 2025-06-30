@@ -181,7 +181,7 @@
                 event.preventDefault();
                 return;
             }
-            const maxSize = 5 * 1024 * 1024;
+            const maxSize = 10 * 1024 * 1024;
             if (file.size > maxSize) {
                 fileError.textContent = 'Die Datei darf maximal 5 MB groß sein.';
                 fileError.classList.remove('hidden');
