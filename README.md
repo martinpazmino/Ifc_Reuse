@@ -47,7 +47,7 @@ The path to the `IfcConvert` binary used for fragment generation can be configur
 - `tests/` – simple test files
 - `*.markdown` – additional documentation (in German)
 
-![screenshot](Screenshot%202025-06-17%20140752.png)
+
 
 ## License
 
