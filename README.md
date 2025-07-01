@@ -49,3 +49,7 @@ The path to the `IfcConvert` binary used for fragment generation can be configur
 
 ![screenshot](Screenshot%202025-06-17%20140752.png)
 
+## License
+
+This project is licensed under the [MIT License](./LICENSE).  
+(c) 2025 IFC Reuse Platform
